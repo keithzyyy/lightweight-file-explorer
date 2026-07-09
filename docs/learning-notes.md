@@ -6,8 +6,9 @@ These notes are for building a mental model of the stack used in this take-home 
 
 This project is a ***web app***. That means there are two important places where code can run:
 
-- in the browser, where the user sees and clicks the interface
-- on the server, where backend code can read files, talk to a database, and return data to the browser
+1. in the **browser**, where the user sees and clicks the interface
+
+2. on the server, where backend code can read files, talk to a database, and return data to the browser
 
 ***JavaScript*** is the language. It can run in the browser, and it can also run outside the browser when a runtime provides the environment for it.
 
@@ -17,8 +18,7 @@ A ***runtime*** is the program that executes code and provides the surrounding e
     ```powershell
     python script.py
     ```
-
-the Python interpreter/runtime executes the Python code. It also gives that code access to memory, files, installed packages, standard library modules, and operating system features.
+    the Python interpreter/runtime executes the Python code. It also gives that code access to memory, files, installed packages, standard library modules, and operating system features.
 
 - ***Node.js*** plays a similar role for JavaScript outside the browser. When running:
 
