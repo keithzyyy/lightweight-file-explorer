@@ -1,29 +1,94 @@
 # File Explorer Spec
 
-## Purpose
-The app organizes a flat set of Markdown files into a virtual folder tree, displays it in a web UI, and lets users create/move folders/files.
+## 1. Purpose
 
-## MVP Scope
-The app must support the following as a minimum viable requirement:
-- seed initial useful hierarchy from files/
-- display tree
-- preview selected Markdown
-- create folder
-- move file/folder
-- persist changes
+The app reads the provided flat Markdown files from `files/`, organizes them into a useful virtual folder tree, displays that tree in a web UI, allows users to create folders and move files or folders, and persists the virtual structure without physically moving or rewriting the original Markdown files.
 
-## Non-Goals
-Good non-goals for now:
-- no file upload
-- no physical moving of files in `files/`
-- no editing Markdown contents in `files/`
-- no drag-and-drop in MVP
-- no authentication
-- no multi-user support
+## 2. High-Level MVP Program Flow
 
+The MVP app is database-backed. In-memory operations are still useful during development, but the finished MVP should persist user changes with SQLite.
 
-## Data Model
-Define the flat node shape for an object (file or folder). Prefer TypeScript-style names (JavaScript + typing) since implementation is likely TypeScript
+Expected MVP flow:
+
+1. The user starts the Nuxt app and opens it in the browser.
+2. The Nuxt server ensures the SQLite database and `nodes` table exist.
+3. The server checks whether node rows already exist.
+4. If the database has node rows, the server loads the existing flat nodes from SQLite.
+5. If the database is empty, the server reads Markdown filenames from `files/`, organizes them into initial flat `ExplorerNode` rows, inserts those rows into SQLite, and then loads the rows.
+6. The server calls `buildTree(nodes)` to convert flat rows into a nested tree.
+7. The UI renders the nested tree in the left file explorer panel.
+8. When the user creates a folder or moves a node, the UI sends the request to the server.
+9. The server validates the operation and updates SQLite.
+10. The server reloads flat nodes, rebuilds the tree, and returns the updated tree to the UI.
+11. When the user selects a Markdown file, the server reads the file content from `files/` and returns it for preview.
+
+`buildTree(nodes)` does not decide where files belong. It only converts rows with existing parent relationships into nested data for rendering. Initial file organization is a separate step.
+
+## 3. Non-Goals
+
+- No file upload for the MVP.
+- No physical moving, renaming, or rewriting files in `files/`.
+- No editing Markdown file contents.
+- No drag-and-drop movement for the MVP.
+- No authentication.
+- No multi-user or concurrent editing support.
+
+## 4. Development Plan
+
+The implementation should progress in stages so the tree logic can be understood before SQLite and UI wiring add complexity.
+
+### Stage 1: Toy Known-Parent Nodes In Memory
+
+Use a hardcoded flat array of `ExplorerNode` objects where `parentId` values are already known.
+
+Goals:
+
+- define the node shape
+- implement `buildTree(nodes)`
+- implement `formatTree(tree)` for terminal inspection
+- implement `createFolder(nodes, parentId, name)`
+- implement `moveNode(nodes, nodeId, newParentId)`
+- manually inspect operation sequences by calling `formatTree(buildTree(nodes))`
+
+### Stage 2: Toy Filename Organization In Memory
+
+Use a hardcoded list of Markdown filenames and convert them into initial flat `ExplorerNode` rows.
+
+Goals:
+
+- implement `organizeInitialFiles(fileNames)`
+- confirm the generated rows represent the expected hierarchy
+- reuse `buildTree(nodes)` and `formatTree(tree)` to inspect the result
+
+### Stage 3: Real Markdown Files In Memory
+
+Read the real Markdown filenames from `files/` and organize them into initial flat `ExplorerNode` rows in memory.
+
+Goals:
+
+- confirm the app can discover the provided files
+- keep original files flat and unchanged
+- verify the real file list produces the expected starting hierarchy
+
+### Stage 4: Real Markdown Files With SQLite Persistence
+
+Persist the virtual folder/file structure in SQLite.
+
+Goals:
+
+- create the database and `nodes` table
+- seed the database only when it is empty
+- load existing rows on later app starts
+- persist `createFolder` and `moveNode` changes through operation-based database updates
+
+## 5. Expected Behavior
+
+### Data Model
+
+Use a flat adjacency-list model as the source shape for both in-memory development and SQLite persistence.
+
+Application-level node shape:
+
 ```ts
 type ExplorerNode = {
   id: string
@@ -35,140 +100,297 @@ type ExplorerNode = {
 }
 ```
 
-## Initial File Organization
-Document the seed hierarchy and the rule behind it. This is important because “organise them into a useful structure” is a requirement.
+Tree rendering shape:
 
-## Core Operations
+```ts
+type TreeNode = ExplorerNode & {
+  children: TreeNode[]
+}
+```
 
-This is the heart of the feature branch. For each function, define:
-- purpose
-- input
-- output
-- side effects or no side effects
-- error cases
+SQLite can use snake_case column names while the application uses camelCase fields:
 
+```text
+id         -> id
+type       -> type
+name       -> name
+parent_id  -> parentId
+file_path  -> filePath
+sort_order -> sortOrder
+```
 
-For the first tree-model branch, prefer to make the pure operations in-memory and side-effect-free where possible:
+Rules:
+
+- `parentId = null` means the node is at the virtual root.
+- Folder nodes may contain folder nodes or file nodes.
+- File nodes point to real Markdown files through `filePath`.
+- Folder nodes should have `filePath = null`.
+- The frontend should render a nested `TreeNode[]`, not raw database rows.
+
+### Initial File Organization
+
+The initial seed should represent this hierarchy:
+
+```text
+300-product/
+  310-product-a/
+    310-governance/
+      310-ARCHITECTURE.md
+      310-gov-high-level-spec.md
+    311-epic-a/
+      311-100-epic-epic-a.md
+      311-110-feature-feature-a.md
+      311-111-story-story-a.md
+      311-112-story-story-b.md
+    312-epic-b/
+      312-100-epic-epic-b.md
+      312-110-feature-feature-a.md
+      312-111-story-story-a.md
+      312-120-feature-feature-b.md
+```
+
+Deterministic grouping rule:
+
+- Create root folder `300-product`.
+- Create child folder `310-product-a` under `300-product`.
+- Put `310-ARCHITECTURE.md` and files matching `310-gov-*` under `310-governance`.
+- Put files beginning with `311-` under `311-epic-a`.
+- Put files beginning with `312-` under `312-epic-b`.
+- Put `310-governance`, `311-epic-a`, and `312-epic-b` under `310-product-a`.
+
+### UI Behavior
+
+- Show the file/folder tree in a left panel.
+- Show the selected Markdown file preview in a right panel.
+- Provide a create-folder button.
+- Provide a simple "Move to..." control for moving files or folders.
+- Selecting a folder makes it the default destination for creating a child folder.
+- If no folder is selected, creating a folder should place it at the virtual root.
+- Selecting a file should show its Markdown contents in the preview pane.
+
+### Persistence Behavior
+
+- SQLite stores the virtual folder/file structure.
+- The original Markdown files remain flat in `files/`.
+- The app seeds the database only when it is empty.
+- User-created folders and moved nodes must persist after app restart.
+- Seeding must not overwrite persisted user changes.
+
+## 6. Core Operations / Function Interfaces
+
+### In-Memory Tree Operations
+
+These operations are used for stages 1-3 and tests.
 
 ```ts
 buildTree(nodes): TreeNode[]
+formatTree(tree): string
 createFolder(nodes, parentId, name): ExplorerNode[]
 moveNode(nodes, nodeId, newParentId): ExplorerNode[]
 ```
 
-### `buildTree(nodes)`
+Expected behavior:
 
-### `createFolder(nodes, parentId, name)`
+- `buildTree(nodes)` returns nested `TreeNode[]` from flat rows with existing `parentId` values.
+  - For example, this flat set of nodes
+   ```ts
+   const nodes = [
+   { id: '300-product',
+      type: 'folder',
+      name: '300-product',
+      parentId: null },
 
-### `moveNode(nodes, nodeId, newParentId)`
+   { id: '310-governance',
+      type: 'folder',
+      name: '310-governance',
+      parentId: '310-product-a'},
 
-### `getMarkdownFile(fileId)`
+   { id: '310-epic-a',
+      type: 'folder',
+      name: '310-epic-a',
+      parentId: '310-product-a'},
 
-### `loadTree()`
+   { id: '310-product-a',
+      type: 'folder',
+      name: '310-product-a',
+      parentId: '300-product' },
+   { id: '310-architecture',
+      type: 'file',
+      name: '310-ARCHITECTURE.md',
+      parentId: '310-governance',
+      filePath: 'files/310-ARCHITECTURE.md' },
+   ]
+   ```
+   should return
+   ```ts
+   [
+      {
+         id: '300-product',
+         type: 'folder',
+         name: '300-product',
+         children: [
+            {
+               id: '310-product-a',
+               type: 'folder',
+               name: '310-product-a',
+               children: [
+                  {
+                     id: '310-governance',
+                     type: 'folder',
+                     name: '310-governance',
+                     children: [
+                           { id: '310-architecture',
+                           type: 'file',
+                           name: '310-ARCHITECTURE.md',
+                           filePath: 'files/310-ARCHITECTURE.md'
 
-### `saveTree(tree)`
+                           }
+                     ]
+                  },
 
-## Validation Rules
+                  {
+                     id: '310-epic-a',
+                     type: 'folder',
+                     name: '310-epic-a',
+                     children: []
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+   ```
+- `formatTree(tree)` returns printable text for manual inspection.
+- `createFolder(nodes, parentId, name)` returns updated flat rows with a new folder node.
+- `moveNode(nodes, nodeId, newParentId)` returns updated flat rows with one changed parent relationship.
+- These functions should not read or write SQLite.
 
-Examples:
-- folder name cannot be empty
-- parentId must be null or an existing folder
-- files cannot contain children
-- cannot move a node into itself
-- cannot move a folder into its descendant
-- unknown node IDs should fail clearly
+### Initial File Organization
 
-## UI Behavior
-Keep this behavior-level for now:
-- left panel tree
-- right panel preview
-- create folder button
-- move using “Move to...” control
-- selected folder is default create destination
-- no selected folder means root
+This operation is used in stages 2-4.
 
-## Persistence Behavior
-For now, this section can state the intended later behavior:
-- current feature may operate in memory
-- final app uses SQLite
-- original Markdown files remain flat
-- persisted user changes should not be overwritten by re-seeding
+```ts
+organizeInitialFiles(fileNames): ExplorerNode[]
+```
 
-## Development Plan
-1. Start in memory: use plain in-memory data inside the Node.js runtime. Define an array such as
-    ```ts
-    const nodes = [
-    { id: '300-product', type: 'folder', name: '300-product', parentId: null },
-    { id: '310-product-a', type: 'folder', name: '310-product-a', parentId: '300-product' },
-    { id: '310-architecture', type: 'file', name: '310-ARCHITECTURE.md', parentId: '310-governance', filePath: 'files/310-ARCHITECTURE.md' }
-    ]
-    ```
-    Then test the following:
-    ```ts
-    buildTree(nodes)
-    createFolder(nodes, parentId, name)
-    moveNode(nodes, nodeId, newParentId)
-    ```
+Expected behavior:
 
-2. Logic to read existing `files/` list into initial node rows: Create logic that knows how to turn the existing files/ list into initial node rows.
-That can still return in-memory rows first:
-    ```ts
-    const nodes = seedInitialNodes(markdownFiles)
-    ```
+- Accept a list of Markdown filenames.
+- Return flat `ExplorerNode` rows representing the initial virtual hierarchy.
+- Include folder nodes and file nodes.
+- Set `filePath` for file nodes so previews can later read from `files/`.
 
-3. Add SQLite for persistence: You only need SQLite once you want changes to survive after the app stops.
-    - Without SQLite:
-        ```
-        run app
-        create folder
-        move file
-        stop app
-        changes disappear
-        ```
-    - With SQLite:
-      ```
-      run app
-      create folder
-      move file
-      stop app
-      restart app
-      changes remain
-      ```
-   - I.e. So SQLite is for persistence, not for proving the tree logic.
+### UI-Facing Operations
 
-**Rough plan**
+These operations are used when connecting Nuxt UI/API behavior.
 
-1. Define the node data shape.
-2. Implement `buildTree()` from flat nodes.
-3. Implement `createFolder()` in memory.
-4. Implement `moveNode()` in memory, including invalid move prevention.
-5. Add tests.
-6. Add seeding from the known Markdown files.
-7. Add SQLite storage.
-8. Connect to Nuxt API routes.
-9. Connect to UI.
+```ts
+loadTree(): TreeNode[]
+createFolderForUi(parentId, name): TreeNode[]
+moveNodeForUi(nodeId, newParentId): TreeNode[]
+getMarkdownFile(fileId): string
+```
 
-## Test Plan
-This should be concrete:
-- `buildTree` creates nested tree from flat rows
-- root nodes have `parentId = null`
-- `createFolder` adds folder under root
-- `createFolder` adds folder under folder
-- `createFolde`r rejects file parent
-- `moveNode` moves file
-- `moveNode` moves folder
-- `moveNode` rejects self move
-- `moveNode` rejects descendant move
-- unknown IDs fail clearly
+Expected behavior:
 
-## Manual Acceptance Checklist
+- `loadTree()` returns the current nested tree for the UI.
+- `createFolderForUi(parentId, name)` persists the folder creation and returns the updated tree.
+- `moveNodeForUi(nodeId, newParentId)` persists the move and returns the updated tree.
+- `getMarkdownFile(fileId)` returns Markdown content for preview.
 
-- [ ] App starts locally
-- [ ] Initial tree matches expected hierarchy
-- [ ] Clicking a file shows Markdown preview
-- [ ] Creating a root folder persists
-- [ ] Creating a folder inside another folder persists
-- [ ] Moving a file persists
-- [ ] Invalid moves are prevented
+### Persistence / DB Operations
 
-## Open Questions
+These operations are used in stage 4.
+
+```ts
+ensureDatabase()
+seedDatabaseIfEmpty()
+loadNodes()
+insertFolder(parentId, name)
+updateNodeParent(nodeId, newParentId)
+```
+
+Expected behavior:
+
+- `ensureDatabase()` creates the SQLite database/table if needed.
+- `seedDatabaseIfEmpty()` inserts the initial virtual hierarchy only when no node rows exist.
+- `loadNodes()` returns flat `ExplorerNode` rows from SQLite.
+- `insertFolder(parentId, name)` inserts one folder row.
+- `updateNodeParent(nodeId, newParentId)` updates one node's parent.
+
+### Deferred Operations
+
+`saveTree()` is deferred. The preferred MVP persistence model is operation-based updates: creating a folder inserts one row, and moving a node updates one row.
+
+## 7. Validation Rules
+
+- Folder names cannot be empty.
+- `parentId` must be `null` or an existing folder node.
+- Files cannot contain children.
+- A node cannot be moved into itself.
+- A folder cannot be moved into one of its descendants.
+- Unknown node IDs should fail clearly.
+- Unknown parent IDs should fail clearly.
+- File preview should fail clearly if the file node does not exist or its file path cannot be read.
+- The app should not allow operations that require physically moving or rewriting files in `files/`.
+
+## 8. Test Plan
+
+Tree operation tests:
+
+- `buildTree` creates a nested tree from flat rows.
+- `buildTree` places `parentId = null` nodes at the virtual root.
+- `buildTree` orders siblings by `sortOrder`.
+- `formatTree` prints a readable tree.
+
+Initial organization tests:
+
+- `organizeInitialFiles` creates the expected root and product folders.
+- `organizeInitialFiles` places governance files under `310-governance`.
+- `organizeInitialFiles` places `311-` files under `311-epic-a`.
+- `organizeInitialFiles` places `312-` files under `312-epic-b`.
+
+Mutation tests:
+
+- `createFolder` adds a folder at the root.
+- `createFolder` adds a folder under another folder.
+- `createFolder` rejects a file parent.
+- `moveNode` moves a file.
+- `moveNode` moves a folder.
+- `moveNode` rejects moving a node into itself.
+- `moveNode` rejects moving a folder into a descendant.
+- Unknown IDs fail clearly.
+
+Persistence tests:
+
+- Empty database is seeded once.
+- Existing database rows are loaded without reseeding.
+- Creating a folder persists after reload.
+- Moving a node persists after reload.
+
+Preview tests:
+
+- `getMarkdownFile` returns content for a valid file node.
+- `getMarkdownFile` fails clearly for an unknown file node.
+
+## 9. Manual Acceptance Checklist
+
+- [ ] App starts locally.
+- [ ] Initial tree matches the expected hierarchy.
+- [ ] Original files remain flat in `files/`.
+- [ ] Clicking a file shows Markdown preview.
+- [ ] Creating a root folder updates the tree.
+- [ ] Creating a folder inside another folder updates the tree.
+- [ ] Moving a file updates the tree.
+- [ ] Moving a folder updates the tree.
+- [ ] Invalid moves are prevented.
+- [ ] User-created folders persist after app restart.
+- [ ] Moved nodes persist after app restart.
+
+## 10. Open Questions
+
+- Should IDs be deterministic slugs, generated UUIDs, or database-generated values?
+- Should unknown filename patterns be placed in the root, in an `unclassified` folder, or rejected during seeding?
+- Should duplicate folder names be allowed under the same parent?
+- Should `sortOrder` be assigned alphabetically, by seed order, or by explicit grouping order?
+- Should `node:sqlite` be used directly, or should the project switch to another SQLite package if Nuxt compatibility becomes awkward?
