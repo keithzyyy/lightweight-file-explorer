@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs'
+
 type ExplorerNode = {
   id: string
   type: 'folder' | 'file'
@@ -11,18 +13,21 @@ type TreeNode = ExplorerNode & {
   children: TreeNode[]
 }
 
-const markdownFileNames = [
-  '310-ARCHITECTURE.md',
-  '310-gov-high-level-spec.md',
-  '311-100-epic-epic-a.md',
-  '311-110-feature-feature-a.md',
-  '311-111-story-story-a.md',
-  '311-112-story-story-b.md',
-  '312-100-epic-epic-b.md',
-  '312-110-feature-feature-a.md',
-  '312-111-story-story-a.md',
-  '312-120-feature-feature-b.md'
-]
+/**
+ * Reads the real Markdown filenames from the provided files/ directory.
+ *
+ * Stage 3 differs from Stage 2 only at the input boundary: instead of using a
+ * hardcoded filename list, it discovers the actual .md files on disk.
+ */
+function readMarkdownFileNames(directoryPath: string): string[] {
+  return readdirSync(directoryPath)
+    // Keep only Markdown files; other files in files/ should not become file nodes.
+    .filter((fileName) => fileName.toLowerCase().endsWith('.md'))
+    // Sort so Stage 3 produces deterministic output regardless of filesystem order.
+    .sort((a, b) => a.localeCompare(b))
+}
+
+const markdownFileNames = readMarkdownFileNames('files')
 
 /**
  * Converts the given flat Markdown filenames into flat ExplorerNode rows.

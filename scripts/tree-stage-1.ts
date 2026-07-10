@@ -252,7 +252,7 @@ function createUniqueId(nodes: ExplorerNode[], name) {
 
   /*
   Creates a unique identifier for a folder with name `name`.
-  For now identifier has the form  `name + suffix` or `folder + suffix`
+  For now identifier has the form `name + suffix` or `folder + suffix`
   */ 
 
   const baseId = name
