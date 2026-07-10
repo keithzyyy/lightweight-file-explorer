@@ -64,6 +64,8 @@ For this project, the Markdown files stay flat in `files/`. The app will store t
 
 `public/` contains static files that are served directly by the app, such as `favicon.ico` and `robots.txt`.
 
+## Suggested project directory
+
 Future project code will likely add directories such as:
 
 - `server/` is where Nuxt backend code can live.
