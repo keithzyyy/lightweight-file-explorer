@@ -65,10 +65,36 @@ Goals:
 Read the real Markdown filenames from `files/` and organize them into initial flat `ExplorerNode` rows in memory.
 
 Goals:
-
-- confirm the app can discover the provided files
+- construct a `readMarkdownFileNames(dir)` function to read files in `dir`
+- confirm the program can discover the provided files
 - keep original files flat and unchanged
 - verify the real file list produces the expected starting hierarchy
+
+#### Stage 3.1: Real Markdown Files In Memory & render using Vue 
+
+Read the real Markdown filenames from `files/`, organize them into initial flat `ExplorerNode` rows in memory, **and render the initial tree using Vue**.
+- The real Markdown files are read by the Nuxt server, organized using our deterministic rule, converted into a tree, and displayed in the browser.
+
+Goals:
+- First, confirm that the tree can be rendered; the expected starting hierarchy of the files are present in the app, something like:
+   ```
+   files/
+      real Markdown docs
+
+   server/utils/tree.ts
+      readMarkdownFileNames
+      organizeInitialFiles
+      buildTree
+
+   server/api/tree.get.ts
+      returns buildTree(organizeInitialFiles(readMarkdownFileNames('files')))
+
+   app/app.vue
+      calls /api/tree
+      renders a basic left-side tree
+      right side can be placeholder for now
+   ```
+- 
 
 ### Stage 4: Real Markdown Files With SQLite Persistence
 
