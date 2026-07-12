@@ -48,7 +48,15 @@ null before calling POST /api/move.
 */
 const ROOT_DESTINATION_VALUE = '__root__'
 
-function flattenTree(nodes: TreeNode[], depth = 0, ancestorIds: string[] = []): DisplayNode[] {
+// Tracks folder ids that are currently collapsed in the UI.
+const collapsedFolderIds = ref<Set<string>>(new Set())
+
+function flattenTree(
+  nodes: TreeNode[],
+  depth = 0,
+  ancestorIds: string[] = [],
+  collapsedIds: Set<string> | null = null
+): DisplayNode[] {
   /*
   Flattens the nested TreeNode[] into display rows with a `depth`
   and `ancestorIds`.
@@ -84,22 +92,45 @@ function flattenTree(nodes: TreeNode[], depth = 0, ancestorIds: string[] = []): 
   The move dropdown uses ancestorIds to avoid offering a folder's own
   descendants as destinations.
 
+  When collapsedIds is provided, folder rows still appear, but their children
+  are not included in the returned display rows.
+
   */
-  return nodes.flatMap((node) => [
-    { ...node, depth, ancestorIds },
-    ...flattenTree(node.children, depth + 1, [...ancestorIds, node.id])
-  ])
+  return nodes.flatMap((node) => {
+    const displayNode: DisplayNode = { ...node, depth, ancestorIds }
+
+    if (node.type === 'folder' && collapsedIds?.has(node.id)) {
+      return [displayNode]
+    }
+
+    return [
+      displayNode,
+      ...flattenTree(node.children, depth + 1, [...ancestorIds, node.id], collapsedIds)
+    ]
+  })
 }
 
-const displayNodes = computed(() => {
+const allDisplayNodes = computed(() => {
   /*
   `computed(..)`: Vue helper for creating a value that is automatically
   derived from other reactive values.
-  - I.e. whenever tree.value changes, recalculate displayNodes
+  - I.e. whenever tree.value changes, recalculate allDisplayNodes.
+
+  allDisplayNodes ignores collapsed folders so non-rendering logic can still
+  find selected nodes and valid move destinations anywhere in the tree.
   */
 
   // ?? returns right operand when LHS is null or undefined
   return flattenTree(tree.value ?? [])
+})
+
+const visibleDisplayNodes = computed(() => {
+  /*
+  visibleDisplayNodes is the flattened list used by the template.
+  It respects collapsedFolderIds, so collapsed descendants are hidden
+  from the left-side tree without changing the underlying TreeNode[].
+  */
+  return flattenTree(tree.value ?? [], 0, [], collapsedFolderIds.value)
 })
 
 // Tracks which tree row is currently selected for highlighting and actions.
@@ -131,7 +162,7 @@ const selectedNode = computed(() => {
     return null
   }
 
-  return displayNodes.value.find((node) => node.id === selectedNodeId.value) ?? null
+  return allDisplayNodes.value.find((node) => node.id === selectedNodeId.value) ?? null
 })
 
 const moveDestinations = computed<MoveDestination[]>(() => {
@@ -158,7 +189,7 @@ const moveDestinations = computed<MoveDestination[]>(() => {
     return destinations
   }
 
-  for (const node of displayNodes.value) {
+  for (const node of allDisplayNodes.value) {
     // Only folders can contain moved nodes, so files are not destinations.
     if (node.type !== 'folder') {
       continue
@@ -211,6 +242,58 @@ const canMoveSelectedNode = computed(() => {
     !selectedMoveDestination.value.disabled
   )
 })
+
+/**
+ * Returns whether a folder row is currently collapsed in the UI.
+ */
+function isFolderCollapsed(nodeId: string): boolean {
+  return collapsedFolderIds.value.has(nodeId)
+}
+
+/**
+ * Expands a folder if it is currently collapsed.
+ *
+ * Side effect: replaces the Set with a copied Set so Vue can detect the
+ * reactive update reliably.
+ */
+function expandFolder(folderId: string): void {
+  if (!collapsedFolderIds.value.has(folderId)) {
+    return
+  }
+
+  const nextCollapsedFolderIds = new Set(collapsedFolderIds.value)
+  nextCollapsedFolderIds.delete(folderId)
+  collapsedFolderIds.value = nextCollapsedFolderIds
+}
+
+/**
+ * Toggles whether a folder's children are visible in the tree.
+ *
+ * Side effects:
+ * - copies and reassigns collapsedFolderIds so Vue sees the Set update
+ * - clears selection/preview if collapsing hides the selected descendant
+ */
+function toggleFolderCollapsed(node: DisplayNode): void {
+  if (node.type !== 'folder') {
+    return
+  }
+
+  const nextCollapsedFolderIds = new Set(collapsedFolderIds.value)
+  const shouldCollapse = !nextCollapsedFolderIds.has(node.id)
+
+  if (shouldCollapse) {
+    nextCollapsedFolderIds.add(node.id)
+  } else {
+    nextCollapsedFolderIds.delete(node.id)
+  }
+
+  collapsedFolderIds.value = nextCollapsedFolderIds
+
+  // If the current selection is inside the collapsed folder, it is no longer visible.
+  if (shouldCollapse && selectedNode.value?.ancestorIds.includes(node.id)) {
+    clearSelection()
+  }
+}
 
 /**
  * Clears the Markdown preview panel.
@@ -309,15 +392,21 @@ async function handleCreateFolderClick() {
     return
   }
 
+  const parentId = getCreateFolderParentId()
+
   const updatedTree = await $fetch<TreeNode[]>('/api/folders', {
     method: 'POST',
     body: {
-      parentId: getCreateFolderParentId(),
+      parentId,
       name: folderName
     }
   })
 
   tree.value = updatedTree
+
+  if (parentId !== null) {
+    expandFolder(parentId)
+  }
 }
 
 /**
@@ -353,6 +442,11 @@ async function handleMoveNodeClick() {
     })
 
     tree.value = updatedTree
+
+    if (destination.parentId !== null) {
+      expandFolder(destination.parentId)
+    }
+
     moveDestinationValue.value = ROOT_DESTINATION_VALUE
   } catch (error) {
     // Keep MVP error handling simple while the backend validation evolves.
@@ -428,7 +522,7 @@ function clearSelection() {
 
       <ul v-else class="tree-list">
         <li
-          v-for="node in displayNodes"
+          v-for="node in visibleDisplayNodes"
           :key="node.id"
           class="tree-row"
           :class="{ selected: node.id === selectedNodeId }"
@@ -442,6 +536,17 @@ function clearSelection() {
               :class="{ elbow: level === node.depth }"
             />
           </span>
+          <button
+            v-if="node.type === 'folder' && node.children.length > 0"
+            type="button"
+            class="collapse-toggle"
+            :aria-label="isFolderCollapsed(node.id) ? `Expand ${node.name}` : `Collapse ${node.name}`"
+            :aria-expanded="!isFolderCollapsed(node.id)"
+            @click.stop="toggleFolderCollapsed(node)"
+          >
+            {{ isFolderCollapsed(node.id) ? '>' : 'v' }}
+          </button>
+          <span v-else class="collapse-spacer" aria-hidden="true" />
           <span class="node-icon">
             {{ node.type === 'folder' ? '📂' : '📄' }}
           </span>
@@ -516,6 +621,31 @@ function clearSelection() {
 
 .tree-row:hover {
   background: #e9eef5;
+}
+
+.collapse-toggle,
+.collapse-spacer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.collapse-toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.collapse-toggle:hover {
+  border-radius: 3px;
+  background: #dbeafe;
 }
 
 .node-icon {
