@@ -16,6 +16,7 @@ cd <your-repo-folder>
 npm install
 npm run dev
 ```
+Note: `npm install` uses `package.json` / `package-lock.json`.
 
 On PowerShell, use `npm.cmd` if `npm` is blocked by execution policy:
 ```
@@ -23,7 +24,7 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-Add optional verification by running to ensure build check
+Optional: verify the production build:
 ```
 npm.cmd run build
 ```
