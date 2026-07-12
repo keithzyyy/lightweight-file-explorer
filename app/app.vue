@@ -3,8 +3,8 @@
 
 /**
  * It flattens the nested TreeNode[] into display
- * rows with a depth, then uses indentation to
- * visually show hierarchy
+ * rows with a depth, then uses guide columns to
+ * visually show hierarchy.
  */
 
 type TreeNode = {
@@ -21,9 +21,45 @@ type DisplayNode = TreeNode & {
   depth: number
 }
 
+
+/*
+call the /api/tree endpoint to retrieve the markdown tree
+*/
 const { data: tree, pending, error } = await useFetch<TreeNode[]>('/api/tree')
 
 function flattenTree(nodes: TreeNode[], depth = 0): DisplayNode[] {
+  /*
+  Flattens the nested TreeNode[] into display rows with a `depth`
+
+  For example, if nodes: TreeNode[] is the following
+  ```
+  [
+    {
+      name: '300-product',
+      children: [
+        {
+          name: '310-product-a',
+          children: [...]
+        }
+      ]
+    }
+  ]
+  ```
+  Then it will return a flat DisplayNode[] like
+  ```
+  [
+    { name: '300-product', depth: 0 },
+    { name: '310-product-a', depth: 1 },
+    { name: '310-governance', depth: 2 },
+    { name: '310-ARCHITECTURE.md', depth: 3 }
+  ]
+  ```
+  The template block will use the depth to render guide columns, e.g.
+  ```
+  v-for="level in node.depth"
+  ```
+
+  */
   return nodes.flatMap((node) => [
     { ...node, depth },
     ...flattenTree(node.children, depth + 1)
@@ -31,13 +67,96 @@ function flattenTree(nodes: TreeNode[], depth = 0): DisplayNode[] {
 }
 
 const displayNodes = computed(() => {
+  /*
+  `computed(..)`: Vue helper for creating a value that is automatically
+  derived from other reactive values.
+  - I.e. whenever tree.value changes, recalculate displayNodes
+  */
+
+  // ?? returns right operand when LHS is null or undefined
   return flattenTree(tree.value ?? [])
 })
+
+// Tracks which tree row is currently selected for highlighting and actions.
+const selectedNodeId = ref<string | null>(null)
+
+// Tracks whether the selected row can be used as a create-folder destination.
+const selectedNodeType = ref<'folder' | 'file' | null>(null)
+
+/**
+ * Selects a tree row.
+ *
+ * Side effect: updates reactive selection state, which lets the template
+ * apply the selected CSS class to the clicked row.
+ */
+function selectNode(node: DisplayNode) {
+  selectedNodeId.value = node.id
+  selectedNodeType.value = node.type
+}
+
+/**
+ * Returns the folder id that should receive a newly created child folder.
+ *
+ * If no folder is selected, return null so the server creates at the root.
+ */
+function getCreateFolderParentId(): string | null {
+  if (selectedNodeType.value !== 'folder') {
+    return null
+  }
+
+  return selectedNodeId.value
+}
+
+/**
+ * Handles the "+ Folder" button click.
+ *
+ * Side effects:
+ * - asks the user for a folder name
+ * - calls the create-folder API route
+ * - replaces tree.value with the updated tree returned by the server
+ */
+async function handleCreateFolderClick() {
+  const folderName = prompt('Folder name')
+
+  if (!folderName) {
+    return
+  }
+
+  const updatedTree = await $fetch<TreeNode[]>('/api/folders', {
+    method: 'POST',
+    body: {
+      parentId: getCreateFolderParentId(),
+      name: folderName
+    }
+  })
+
+  tree.value = updatedTree
+}
+
+/**
+ * Clears the current tree selection.
+ *
+ * Side effect: no tree row remains selected, so creating a folder targets root.
+ */
+function clearSelection() {
+  selectedNodeId.value = null
+  selectedNodeType.value = null
+}
+
 </script>
 
 <template>
+
+  <div class="tree-header">
+    <h1>File Explorer</h1>
+    <button type="button" @click.stop="handleCreateFolderClick">
+      + Folder
+    </button>
+  </div>
+
+
   <main class="app-shell">
-    <aside class="tree-panel">
+    <aside class="tree-panel" @click="clearSelection">
       <h1>File Explorer</h1>
 
       <p v-if="pending">Loading tree...</p>
@@ -48,14 +167,24 @@ const displayNodes = computed(() => {
           v-for="node in displayNodes"
           :key="node.id"
           class="tree-row"
-          :style="{ paddingLeft: `${node.depth * 20}px` }"
+          :class="{ selected: node.id === selectedNodeId }"
+          @click.stop="selectNode(node)"
         >
+          <span class="tree-indent" aria-hidden="true">
+            <span
+              v-for="level in node.depth"
+              :key="`${node.id}-guide-${level}`"
+              class="tree-guide"
+              :class="{ elbow: level === node.depth }"
+            />
+          </span>
           <span class="node-icon">
             {{ node.type === 'folder' ? 'folder' : 'file' }}
           </span>
           <span>{{ node.name }}</span>
         </li>
       </ul>
+
     </aside>
 
     <section class="preview-panel">
@@ -91,6 +220,7 @@ const displayNodes = computed(() => {
 
 .tree-row {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 6px 4px;
   border-radius: 4px;
@@ -104,5 +234,52 @@ const displayNodes = computed(() => {
   width: 48px;
   color: #666;
   font-size: 12px;
+}
+
+.tree-indent {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+
+.tree-guide {
+  position: relative;
+  width: 18px;
+  min-height: 20px;
+}
+
+.tree-guide::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 8px;
+  border-left: 1px solid #c6ced8;
+}
+
+.tree-guide.elbow::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  width: 10px;
+  border-top: 1px solid #c6ced8;
+}
+
+.tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tree-row {
+  cursor: pointer;
+}
+
+.tree-row.selected {
+  background: #dbeafe;
+  color: #123c69;
+  font-weight: 600;
 }
 </style>
