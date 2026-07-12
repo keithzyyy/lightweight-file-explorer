@@ -15,6 +15,8 @@ type CreateFolderBody = {
  * replaced with a SQLite-backed insert operation.
  */
 export default defineEventHandler(async (event) => {
+
+  // read arguments: folder name and selected parentId
   const body = await readBody<CreateFolderBody>(event)
 
   const name = body.name
