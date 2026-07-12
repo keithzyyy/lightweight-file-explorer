@@ -2,27 +2,31 @@
 
 ## 1. Purpose
 
-The app reads the provided flat Markdown files from `files/`, organizes them into a useful virtual folder tree, displays that tree in a web UI, allows users to create folders and move files or folders, and persists the virtual structure without physically moving or rewriting the original Markdown files.
+The app reads the provided flat Markdown files from `files/`, organizes them into a useful virtual folder tree, displays that tree in a web UI, lets users create folders and move files or folders, previews Markdown content, and persists the virtual structure in SQLite without physically moving or rewriting the original Markdown files.
 
 ## 2. High-Level MVP Program Flow
 
-The MVP app is database-backed. In-memory operations are still useful during development, but the finished MVP should persist user changes with SQLite.
+The current MVP app is database-backed. Earlier in-memory stages were useful for learning and prototyping, but the active app flow persists user changes with SQLite through `server/utils/db.ts`.
 
-Expected MVP flow:
+Expected current MVP flow:
 
 1. The user starts the Nuxt app and opens it in the browser.
-2. The Nuxt server ensures the SQLite database and `nodes` table exist.
-3. The server checks whether node rows already exist.
-4. If the database has node rows, the server loads the existing flat nodes from SQLite.
-5. If the database is empty, the server reads Markdown filenames from `files/`, organizes them into initial flat `ExplorerNode` rows, inserts those rows into SQLite, and then loads the rows.
-6. The server calls `buildTree(nodes)` to convert flat rows into a nested tree.
-7. The UI renders the nested tree in the left file explorer panel.
-8. When the user creates a folder or moves a node, the UI sends the request to the server.
-9. The server validates the operation and updates SQLite.
-10. The server reloads flat nodes, rebuilds the tree, and returns the updated tree to the UI.
-11. When the user selects a Markdown file, the server reads the file content from `files/` and returns it for preview.
+2. The Nuxt server uses `server/utils/db.ts` as the active storage layer.
+3. The DB layer opens `data/file-explorer.sqlite` with Node's built-in `node:sqlite` `DatabaseSync`.
+4. The DB layer ensures the SQLite database and `nodes` table exist.
+5. The DB layer checks whether node rows already exist.
+6. If the database has node rows, the server loads the existing flat nodes from SQLite.
+7. If the database is empty, the server reads Markdown filenames from `files/`, organizes them into initial flat `ExplorerNode` rows, inserts those rows into SQLite, and then loads the rows.
+8. `GET /api/tree` calls `loadNodes()`, calls `buildTree(nodes)`, and returns `TreeNode[]` to the UI.
+9. The UI renders the tree in the left file explorer panel.
+10. When the user creates a folder, the UI sends `POST /api/folders`.
+11. When the user moves a file or folder, the UI sends `POST /api/move`.
+12. Mutation routes validate the operation, update SQLite, reload flat rows, rebuild the tree, and return updated `TreeNode[]` to the UI.
+13. When the user selects a Markdown file, the UI sends `GET /api/markdown?fileId=<node-id>`.
+14. The Markdown route looks up the virtual file node, reads Markdown content from the real `filePath`, and returns raw Markdown text for preview.
+15. Folder collapse/expand is frontend-only UI state. It changes which rows are visible, but it is not saved to SQLite.
 
-`buildTree(nodes)` does not decide where files belong. It only converts rows with existing parent relationships into nested data for rendering. Initial file organization is a separate step.
+`buildTree(nodes)` does not decide where files belong. It only converts rows with existing parent relationships into nested data for rendering. Initial file organization is a separate seeding step.
 
 ## 3. Non-Goals
 
@@ -32,10 +36,11 @@ Expected MVP flow:
 - No drag-and-drop movement for the MVP.
 - No authentication.
 - No multi-user or concurrent editing support.
+- No persisted folder collapse/expand state.
 
 ## 4. Development Plan
 
-The implementation should progress in stages so the tree logic can be understood before SQLite and UI wiring add complexity.
+This section is both historical and current. Stages 1-3 describe the learning/prototype path. Stage 4 and later describe the current MVP direction.
 
 ### Stage 1: Toy Known-Parent Nodes In Memory
 
@@ -57,7 +62,7 @@ Use a hardcoded list of Markdown filenames and convert them into initial flat `E
 Goals:
 
 - implement `organizeInitialFiles(fileNames)`
-- confirm the generated rows represent the expected hierarchy
+- confirm generated rows represent the expected hierarchy
 - reuse `buildTree(nodes)` and `formatTree(tree)` to inspect the result
 
 ### Stage 3: Real Markdown Files In Memory
@@ -65,122 +70,125 @@ Goals:
 Read the real Markdown filenames from `files/` and organize them into initial flat `ExplorerNode` rows in memory.
 
 Goals:
-- construct a `readMarkdownFileNames(dir)` function to read files in `dir`
+
+- implement `readMarkdownFileNames(dir)`
 - confirm the program can discover the provided files
 - keep original files flat and unchanged
 - verify the real file list produces the expected starting hierarchy
 
-#### Stage 3.1: Render tree using Vue 
+### Stage 3.1: Render Tree Using Vue
 
-Read the real Markdown filenames from `files/`, organize them into initial flat `ExplorerNode` rows in memory, **and render the initial tree using Vue**.
-- The real Markdown files are read by the Nuxt server, organized using our deterministic rule, converted into a tree, and displayed in the browser.
+Read real Markdown filenames from `files/`, organize them with the deterministic rule, convert them into a tree, and render the initial tree in the browser.
+
+Prototype shape:
+
+```text
+files/
+  real Markdown docs
+
+server/utils/tree.ts
+  readMarkdownFileNames
+  organizeInitialFiles
+  buildTree
+
+server/api/tree.get.ts
+  returns buildTree(...)
+
+app/app.vue
+  calls /api/tree
+  renders a basic left-side tree
+```
+
+### Stage 3.2: Temporary In-Memory Store
+
+Use `server/utils/node-store.ts` as a prototype storage boundary before SQLite.
+
+The temporary store mimics future database operations:
+
+```ts
+loadNodes(): ExplorerNode[]
+insertFolder(parentId: string | null, name: string): ExplorerNode[]
+updateNodeParent(nodeId: string, newParentId: string | null): ExplorerNode[]
+```
+
+This layer stores rows in a module-level `ExplorerNode[]`. State is lost when the server process restarts. This file is now prototype/reference code; the active storage layer is `server/utils/db.ts`.
+
+### Stage 3.3: Create Folder UI
+
+Add UI and API behavior for folder creation.
 
 Goals:
-- First, confirm that the tree can be rendered; the expected starting hierarchy of the files are present in the app, something like:
-   ```
-   files/
-      real Markdown docs
 
-   server/utils/tree.ts
-      readMarkdownFileNames
-      organizeInitialFiles
-      buildTree
+- select folders in the tree
+- expose a `+ Folder` button
+- call `POST /api/folders`
+- update `tree.value` with the returned tree
+- create at root if no folder is selected
+- create at root if a file is selected
 
-   server/api/tree.get.ts
-      returns buildTree(organizeInitialFiles(readMarkdownFileNames('files')))
+### Stage 3.4: Move Nodes UI
 
-   app/app.vue
-      calls /api/tree
-      renders a basic left-side tree
-      right side can be placeholder for now
-   ```
+Add UI and API behavior for moving files or folders.
 
-#### Stage 3.2: Design storage layer code 
+Goals:
 
-The goal is to familiarize UI operations without touching database yet, but where exactly do we store the in-memory directory tree? 
+- select a file or folder
+- choose a destination from a simple dropdown
+- include root as a destination
+- include valid folders as destinations
+- disable the current location
+- exclude invalid folder destinations such as self and descendants
+- call `POST /api/move`
+- update `tree.value` with the returned tree
 
-Goal of this stage is to design a storage layer to store the most recent updated `ExplorerNode[]`, **but designed in a way that matches DB operations so that Stage 4 won't require massive overhaul.** 
+### Stage 3.5: Markdown Preview
 
-```
-UI
-  calls server API
+Add Markdown file preview behavior.
 
-server API
-  calls storage operations
+Goals:
 
-storage layer
-  returns ExplorerNode[]
+- clicking a file calls `GET /api/markdown?fileId=<node-id>`
+- the server reads the Markdown content from the file node's `filePath`
+- the preview panel shows raw Markdown text
+- selecting a folder or clearing selection clears the preview
+- stale async preview responses are ignored if the user has already selected a different file
 
-tree logic
-  buildTree(nodes)
-
-server API
-  returns TreeNode[] to UI
-```
-
-Store most recent `ExplorerNode[]` in a server-side `.ts` module, namely 
-```
-server/utils/node-store.ts
-```
-where it exposes operations shaped like future DB operations
-```ts
-function loadNodes(): ExplorerNode[]
-
-/*
-For now, `nodes = [...nodes, newFolder]`
-Which is analogous to `INSERT INTO nodes ...`
-*/
-function createFolderNode(
-      parentId: string | null,
-      name: string): ExplorerNode[]
-
-function updateNodeParent(
-   nodeId: string,
-   newParentId: string | null): ExplorerNode[]
-```
-So here "persistence" is substituted with an in memory prototype: `let nodes: ExplorerNode[]` as opposed to a `nodes` table in SQLite.
-
-
-#### Stage 3.3: UI operations for `createFolder`  
-1. Create server in-memory node store
-2. Change GET /api/tree to load from that store
-3. Add POST /api/folders
-4. In app.vue, add selected folder state
-5. Add "+ Folder" button
-6. On create, update `tree.value` with returned tree
-
-#### Stage 3.4: UI operations for `moveNodes`
-
-#### Stage 3.5: Preview `.md` file contents in the app
-
-
-### Stage 4: Real Markdown Files With SQLite Persistence
+### Stage 4: SQLite Persistence
 
 Persist the virtual folder/file structure in SQLite.
 
-Goals:
+Current implementation direction:
 
-- create the database and `nodes` table
+- use `server/utils/db.ts` as the active storage layer
+- use built-in `node:sqlite`
+- use `DatabaseSync`
+- store the local DB file at `data/file-explorer.sqlite`
+- keep `data/` ignored by Git
+- create the `nodes` table if needed
 - seed the database only when it is empty
 - load existing rows on later app starts
-- persist `createFolder` and `moveNode` changes through operation-based database updates.
-  - For example, the equivalent database-insert SQL shape code to insert a folder node to the in-memory structure could be
-      ```sql
-      INSERT INTO nodes (id, type, name, parent_id, file_path, sort_order)
-      VALUES (?, 'folder', ?, ?, NULL, ?)
-      ```
-   - And the equivalent SQL operation to move a node could be:
-      ```sql
-      UPDATE nodes
-      SET parent_id = ?
-      WHERE id = ?
-      ```
+- persist folder creation with operation-based `INSERT`
+- persist node movement with operation-based `UPDATE`
+- reuse pure `createFolder(...)` and `moveNode(...)` for validation before writing to SQLite
+
+### Stage 5: UI Interaction Polish
+
+Improve usability while keeping the app simple.
+
+Current UI behavior:
+
+- group upper-left controls as `Actions` and `Move selected item`
+- label the move dropdown as `Destination`
+- use `Confirm Move` as the explicit move command
+- show collapse/expand toggles for folders with children
+- keep collapse/expand as frontend-only state
+- keep move destinations based on the full tree, not only visible rows
 
 ## 5. Expected Behavior
 
 ### Data Model
 
-Use a flat adjacency-list model as the source shape for both in-memory development and SQLite persistence.
+Use a flat adjacency-list model as the source shape for both SQLite persistence and in-memory development.
 
 Application-level node shape:
 
@@ -203,7 +211,16 @@ type TreeNode = ExplorerNode & {
 }
 ```
 
-SQLite can use snake_case column names while the application uses camelCase fields:
+Frontend display-row shape:
+
+```ts
+type DisplayNode = TreeNode & {
+  depth: number
+  ancestorIds: string[]
+}
+```
+
+SQLite uses snake_case column names while the app uses camelCase fields:
 
 ```text
 id         -> id
@@ -220,7 +237,45 @@ Rules:
 - Folder nodes may contain folder nodes or file nodes.
 - File nodes point to real Markdown files through `filePath`.
 - Folder nodes should have `filePath = null`.
-- The frontend should render a nested `TreeNode[]`, not raw database rows.
+- The frontend renders a flattened `DisplayNode[]` derived from nested `TreeNode[]`.
+
+### SQLite Persistence
+
+SQLite is the current source of truth for the virtual folder/file structure.
+
+Current implementation details:
+
+- Storage module: `server/utils/db.ts`
+- SQLite API: built-in `node:sqlite`
+- SQLite connection: `DatabaseSync`
+- Database path: `data/file-explorer.sqlite`
+- Database table: `nodes`
+- Prototype storage module: `server/utils/node-store.ts`
+
+`node-store.ts` remains useful as historical/prototype reference code, but active API routes import from `db.ts`.
+
+Current table shape:
+
+```sql
+CREATE TABLE IF NOT EXISTS nodes (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL CHECK (type IN ('folder', 'file')),
+  name TEXT NOT NULL,
+  parent_id TEXT,
+  file_path TEXT,
+  sort_order INTEGER NOT NULL,
+  FOREIGN KEY (parent_id) REFERENCES nodes(id)
+)
+```
+
+Persistence rules:
+
+- `ensureDatabase()` creates the database file and table if needed.
+- `seedDatabaseIfEmpty()` inserts the initial hierarchy only when no node rows exist.
+- `loadNodes()` returns flat `ExplorerNode[]` from SQLite.
+- `insertFolder(parentId, name)` loads rows, calls pure `createFolder(...)`, inserts only the newly created folder row, and returns reloaded rows.
+- `updateNodeParent(nodeId, newParentId)` loads rows, calls pure `moveNode(...)`, updates only the moved node's `parent_id` and `sort_order`, and returns reloaded rows.
+- Seeding must not overwrite persisted user changes.
 
 ### Initial File Organization
 
@@ -255,21 +310,70 @@ Deterministic grouping rule:
 
 ### UI Behavior
 
+The app should prioritize usability over visual polish.
+
+Layout:
+
 - Show the file/folder tree in a left panel.
-- Show the selected Markdown file preview in a right panel.
-- Provide a create-folder button.
-- Provide a simple "Move to..." control for moving files or folders.
-- Selecting a folder makes it the default destination for creating a child folder.
-- If no folder is selected, creating a folder should place it at the virtual root.
-- Selecting a file should show its Markdown contents in the preview pane.
+- Show selected Markdown file preview in a right panel.
+- Render raw Markdown text in the preview panel for now.
+
+Upper-left controls:
+
+```text
+File Explorer
+
+Actions
+[ + Folder ]
+
+Move selected item
+Destination
+[ root                         v ]
+[ Confirm Move ]
+```
+
+Create folder behavior:
+
+- `+ Folder` prompts for a folder name.
+- If a folder is selected, the new folder is created inside that folder.
+- If no folder is selected, the new folder is created at the virtual root.
+- If a file is selected, the new folder is created at the virtual root.
+- Creating inside a collapsed folder expands that folder so the new item is visible.
+
+Move behavior:
+
+- The user selects a file or folder, chooses a destination, and clicks `Confirm Move`.
+- Root is represented in the frontend dropdown with a sentinel string and converted to `null` before calling the API.
+- Only folders can be non-root move destinations.
+- The current location is shown but disabled.
+- A selected folder and its descendants are excluded as destinations.
+- Moving into a collapsed folder expands that folder so the moved item is visible.
+
+Preview behavior:
+
+- Selecting a file loads Markdown preview through `GET /api/markdown?fileId=<node-id>`.
+- Selecting a folder clears the preview.
+- Clicking the empty tree panel clears selection and preview.
+- The frontend only displays a preview response if the selected file still matches the requested file id.
+
+Collapse/expand behavior:
+
+- Folders with children show a `>` / `v` toggle.
+- Files do not show a collapse toggle.
+- Collapsing a folder hides its descendants but keeps the folder row visible.
+- Expanding a folder restores its descendants.
+- Collapsing a folder that contains the selected node clears the hidden selection and preview.
+- Collapse state is frontend-only and is not persisted in SQLite.
+- Move destinations are generated from the full tree, not only the visible collapsed tree.
 
 ### Persistence Behavior
 
 - SQLite stores the virtual folder/file structure.
 - The original Markdown files remain flat in `files/`.
 - The app seeds the database only when it is empty.
-- User-created folders and moved nodes must persist after app restart.
-- Seeding must not overwrite persisted user changes.
+- User-created folders persist after app restart.
+- Moved nodes persist after app restart.
+- Collapse/expand state does not persist after reload or restart.
 
 ## 6. Core Operations / Function Interfaces
 
@@ -279,24 +383,93 @@ This section separates functions by where they run and what kind of state they t
 
 - Functions listed in this section are the intended module contracts.
 - Internal helper functions should be prefixed with `_`.
-- Helper functions may still be tested directly later if useful, but app code should prefer calling the public contract functions.
-- Frontend event handlers should be named by the UI event they handle, such as `handleCreateFolderClick()`, so they are not confused with pure data operations such as `createFolder(...)`.
+- App code should prefer calling public contract functions.
+- Frontend event handlers should be named by the UI event they handle, such as `handleCreateFolderClick()`.
+
+### Function Flow: SQLite-Backed Current App
+
+SQLite is the active source of truth.
+
+```text
+Nuxt app starts
+        |
+        v
+GET /api/tree
+        |
+        v
+loadNodes()
+        |
+        v
+seedDatabaseIfEmpty()
+        |
+        +-- if DB empty -----------------------------+
+        |                                            |
+        v                                            |
+readMarkdownFileNames('files')                       |
+        |                                            |
+        v                                            |
+organizeInitialFiles(fileNames)                      |
+        |                                            |
+        v                                            |
+insert initial ExplorerNode rows into SQLite         |
+        |                                            |
+        +--------------------+-----------------------+
+                             |
+                             v
+                       ExplorerNode[]
+                             |
+                             v
+                        buildTree(nodes)
+                             |
+                             v
+                          TreeNode[]
+                             |
+                             v
+                    return tree to Vue UI
+```
+
+Mutation flow:
+
+```text
+Vue UI action
+        |
+        v
+POST /api/folders OR POST /api/move
+        |
+        v
+loadNodes()
+        |
+        v
+createFolder(...) OR moveNode(...)
+        |
+        v
+INSERT one folder row OR UPDATE one node row
+        |
+        v
+loadNodes()
+        |
+        v
+buildTree(nodes)
+        |
+        v
+return updated TreeNode[] to UI
+```
 
 ### Function Flow: In-Memory Prototype
 
-Used in stages 1-3. Data lives only in memory while the script or dev server is running.
+This flow was used in stages 1-3. It remains useful for understanding the design, but it is not the active persistence path.
 
 ```text
 files/ or hardcoded filenames
         |
         v
-readMarkdownFileNames(dir)          # stage 3 only
+readMarkdownFileNames(dir)
         |
         v
-organizeInitialFiles(fileNames)     # creates flat ExplorerNode[]
+organizeInitialFiles(fileNames)
         |
         v
-ExplorerNode[]                      # flat rows with parentId links
+ExplorerNode[]
         |
         +-----------------------------+
         |                             |
@@ -313,59 +486,6 @@ createFolder(nodes, parentId, name)  moveNode(nodes, nodeId, newParentId)
                       |
                       v
               TreeNode[]
-                      |
-                      v
-              formatTree(tree)       # terminal inspection
-              OR
-              flattenTree(tree)      # frontend display helper
-                      |
-                      v
-              displayed tree
-```
-
-### Function Flow: SQLite-Backed MVP
-
-Used in stage 4 and the final MVP. SQLite is the source of truth.
-
-```text
-Nuxt app starts
-        |
-        v
-ensureDatabase()
-        |
-        v
-seedDatabaseIfEmpty()
-        |
-        +-- if DB empty -----------------------------+
-        |                                            |
-        v                                            |
-readMarkdownFileNames('files/')                      |
-        |                                            |
-        v                                            |
-organizeInitialFiles(fileNames)                      |
-        |                                            |
-        v                                            |
-insert initial ExplorerNode rows into SQLite         |
-        |                                            |
-        +--------------------+-----------------------+
-                             |
-                             v
-                         loadNodes()
-                             |
-                             v
-                       ExplorerNode[]
-                             |
-                             v
-                        buildTree(nodes)
-                             |
-                             v
-                          TreeNode[]
-                             |
-                             v
-GET /api/tree returns tree to Vue UI
-                             |
-                             v
-frontend renders tree
 ```
 
 ### Frontend Rendering Flow
@@ -381,12 +501,25 @@ useFetch('/api/tree')
         v
 tree.value receives TreeNode[]
         |
-        v
-displayNodes recomputes from tree.value
+        +------------------------------+
+        |                              |
+        v                              v
+allDisplayNodes                  visibleDisplayNodes
+full flattened tree              collapsed-aware flattened tree
+        |                              |
+        |                              v
+        |                        template renders <li> rows
         |
         v
-template renders one <li> per DisplayNode
+selection lookup and move destinations
 ```
+
+Important distinction:
+
+- `allDisplayNodes` ignores collapse state and represents the full tree.
+- `visibleDisplayNodes` respects `collapsedFolderIds` and represents only visible rows.
+- The move dropdown uses `allDisplayNodes` so collapsed folders remain valid destinations.
+- The template uses `visibleDisplayNodes` so collapsed descendants are hidden.
 
 Selecting a tree row:
 
@@ -400,8 +533,9 @@ selectNode(node)
 selectedNodeId = node.id
 selectedNodeType = node.type
         |
-        v
-template applies selected class to the matching row
+        +-- if file -----> loadMarkdownPreview(node.id)
+        |
+        +-- if folder ---> clearMarkdownPreview()
 ```
 
 Clearing selection:
@@ -415,39 +549,35 @@ clearSelection()
         v
 selectedNodeId = null
 selectedNodeType = null
-        |
-        v
-no tree row has the selected class
+moveDestinationValue = root sentinel
+clearMarkdownPreview()
 ```
 
-### User Actions Flow
-#### Create folder
+### User Action Flow: Create Folder
+
 ```text
-User creates folder in UI
+User clicks + Folder
         |
         v
-handleCreateFolderClick() // "+Folder", call folder api, update tree 
+handleCreateFolderClick()
+        |
+        v
+prompt for folder name
         |
         v
 getCreateFolderParentId()
         |
-        v
-frontend sends POST /api/folders
+        +-- selected folder ----> parentId = folder id
+        |
+        +-- selected file ------> parentId = null
+        |
+        +-- no selection -------> parentId = null
         |
         v
-createFolderForUi(parentId, name) // function coresponding to above API
-        |
-        v
-validate parentId and folder name
+POST /api/folders
         |
         v
 insertFolder(parentId, name)
-        |
-        v
-loadNodes()
-        |
-        v
-buildTree(nodes) // response to the frontend's call
         |
         v
 return updated TreeNode[] to UI
@@ -456,54 +586,49 @@ return updated TreeNode[] to UI
 tree.value = updatedTree
         |
         v
-displayNodes recomputes and the tree UI rerenders
+expand parent folder if parentId is not null
 ```
-#### Move file/folder in UI
+
+### User Action Flow: Move File/Folder
+
 ```text
-User clicks a node (file/folder)
---> selectedNodeId = node.id
+User selects file/folder
         |
         v
-Click a [Move to...] button
+moveDestinations computed from allDisplayNodes
         |
         v
-Trigger a dropdown below button: root + valid folder destinations
---> Probably need selectedNodeType to inform valid destinations
+User chooses destination
         |
         v
-User chooses a destination from the dropdown
---> moveDestinationParentId = selected value
+Confirm Move
         |
         v
-frontend sends POST /api/move
-        |
-        v
-moveNodeForUi(nodeId, newParentId) // function coresponding to above API
-        |
-        v
-validate nodeId, newParentId, and descendant rules
+POST /api/move with { nodeId, newParentId }
         |
         v
 updateNodeParent(nodeId, newParentId)
         |
         v
-loadNodes()
-        |
-        v
-buildTree(nodes) // response to the frontend's call
-        |
-        v
 return updated TreeNode[] to UI
+        |
+        v
+tree.value = updatedTree
+        |
+        v
+expand destination folder if newParentId is not null
 ```
-#### Preview markdown file
+
+### User Action Flow: Preview Markdown File
+
 ```text
 User selects Markdown file
         |
         v
-GET /api/markdown?fileId=<node-id>
+loadMarkdownPreview(fileId)
         |
         v
-getMarkdownFile(fileId)
+GET /api/markdown?fileId=<node-id>
         |
         v
 look up file node to identify filePath
@@ -515,13 +640,35 @@ read Markdown content from filePath
 return Markdown text to preview panel
 ```
 
-When loading Markdown preview content, the frontend should only display the response if the selected node still matches the requested file id. This prevents slower responses from earlier file selections from overwriting the preview for the currently selected file.
-- E.g. if I click file A then quickly click file B, request B might finish first (preview shows file B) but request A finishes later (if no guard is applied, preview gets overwritten with file A),then the preview gets overwritten with file A
-- if File A’s response comes back after the user has already selected File B, the app ignores File A’s stale response.
+The frontend should only display the response if the selected node still matches the requested file id. This prevents slower responses from earlier file selections from overwriting the preview for the currently selected file.
+
+### User Action Flow: Collapse / Expand Folder
+
+```text
+User clicks folder toggle
+        |
+        v
+toggleFolderCollapsed(node)
+        |
+        v
+copy collapsedFolderIds Set
+        |
+        +-- if expanded ----> add folder id to Set
+        |
+        +-- if collapsed ---> remove folder id from Set
+        |
+        v
+assign copied Set back to collapsedFolderIds
+        |
+        v
+visibleDisplayNodes recomputes
+```
+
+If collapsing the folder hides the selected descendant, `clearSelection()` runs so the UI does not keep a hidden selected row or stale preview.
 
 ### In-Memory Tree Operations
 
-These operations are used for stages 1-3 and tests.
+These pure operations are used by both prototype stages and the SQLite DB layer.
 
 ```ts
 buildTree(nodes: ExplorerNode[]): TreeNode[]
@@ -533,82 +680,12 @@ moveNode(nodes: ExplorerNode[], nodeId: string, newParentId: string | null): Exp
 Expected behavior:
 
 - `buildTree(nodes)` returns nested `TreeNode[]` from flat rows with existing `parentId` values.
-  - For example, this flat set of nodes
-   ```ts
-   const nodes = [
-   { id: '300-product',
-      type: 'folder',
-      name: '300-product',
-      parentId: null },
-
-   { id: '310-governance',
-      type: 'folder',
-      name: '310-governance',
-      parentId: '310-product-a'},
-
-   { id: '310-epic-a',
-      type: 'folder',
-      name: '310-epic-a',
-      parentId: '310-product-a'},
-
-   { id: '310-product-a',
-      type: 'folder',
-      name: '310-product-a',
-      parentId: '300-product' },
-   { id: '310-architecture',
-      type: 'file',
-      name: '310-ARCHITECTURE.md',
-      parentId: '310-governance',
-      filePath: 'files/310-ARCHITECTURE.md' },
-   ]
-   ```
-   should return
-   ```ts
-   [
-      {
-         id: '300-product',
-         type: 'folder',
-         name: '300-product',
-         children: [
-            {
-               id: '310-product-a',
-               type: 'folder',
-               name: '310-product-a',
-               children: [
-                  {
-                     id: '310-governance',
-                     type: 'folder',
-                     name: '310-governance',
-                     children: [
-                           { id: '310-architecture',
-                           type: 'file',
-                           name: '310-ARCHITECTURE.md',
-                           filePath: 'files/310-ARCHITECTURE.md'
-
-                           }
-                     ]
-                  },
-
-                  {
-                     id: '310-epic-a',
-                     type: 'folder',
-                     name: '310-epic-a',
-                     children: []
-                  }
-               ]
-            }
-         ]
-      }
-   ]
-   ```
 - `formatTree(tree)` returns printable text for manual inspection.
 - `createFolder(nodes, parentId, name)` returns updated flat rows with a new folder node.
 - `moveNode(nodes, nodeId, newParentId)` returns updated flat rows with one changed parent relationship.
-- These functions should not read or write SQLite.
+- These pure functions should not read or write SQLite directly.
 
 ### Initial File Organization
-
-This operation is used in stages 2-4.
 
 ```ts
 readMarkdownFileNames(directoryPath: string): string[]
@@ -618,14 +695,13 @@ organizeInitialFiles(fileNames: string[]): ExplorerNode[]
 Expected behavior:
 
 - `readMarkdownFileNames(directoryPath)` returns sorted Markdown filenames from the provided directory.
-- Accept a list of Markdown filenames.
-- Return flat `ExplorerNode` rows representing the initial virtual hierarchy.
-- Include folder nodes and file nodes.
-- Set `filePath` for file nodes so previews can later read from `files/`.
+- `organizeInitialFiles(fileNames)` returns flat `ExplorerNode` rows representing the initial virtual hierarchy.
+- The returned rows include folder nodes and file nodes.
+- File nodes set `filePath` so previews can read from `files/`.
 
 ### Temporary In-Memory Store Operations
 
-These operations are used during Stage 3.2 before SQLite is introduced. They mimic the future persistence boundary while storing rows in a module-level `ExplorerNode[]`.
+These operations are prototype/reference operations from Stage 3.2.
 
 ```ts
 loadNodes(): ExplorerNode[]
@@ -636,15 +712,14 @@ updateNodeParent(nodeId: string, newParentId: string | null): ExplorerNode[]
 Expected behavior:
 
 - `loadNodes()` initializes from `files/` once if needed and returns copied flat rows.
-- `insertFolder(parentId, name)` calls the pure `createFolder(...)`, updates the in-memory array, and returns copied flat rows.
-- `updateNodeParent(nodeId, newParentId)` calls the pure `moveNode(...)`, updates the in-memory array, and returns copied flat rows.
+- `insertFolder(parentId, name)` calls pure `createFolder(...)`, updates the in-memory array, and returns copied flat rows.
+- `updateNodeParent(nodeId, newParentId)` calls pure `moveNode(...)`, updates the in-memory array, and returns copied flat rows.
 - State is lost when the server process restarts.
-- This layer should be replaceable by SQLite operations without changing frontend code.
+- This layer is replaceable by SQLite operations without changing frontend code.
 
 ### Server API / UI-Facing Backend Operations
 
-Server operations callable by the UI.
-- Namely, in Nuxt app, these are backend operations exposed through `server/api` routes so the frontend can call them.
+Server operations callable by the UI are exposed through `server/api` routes.
 
 ```ts
 loadTree(): TreeNode[]
@@ -655,10 +730,11 @@ getMarkdownFile(fileId: string): string
 
 Expected behavior:
 
-- `loadTree()` corresponds to `GET /api/tree`, implemented by `server/api/tree.get.ts`.
-- `createFolderForUi(parentId, name)` persists the folder creation and returns the updated tree. Corresponds to `POST /api/folder`, implemented by `server/api/folders.post.ts`.
-- `moveNodeForUi(nodeId, newParentId)` persists the move and returns the updated tree. Corresponds to `POST /api/move`.
-- `getMarkdownFile(fileId)` returns Markdown content for preview. Corresponds to `GET /api/markdown?fileId=<node-id>`.
+- `loadTree()` corresponds to `GET /api/tree`.
+- `createFolderForUi(parentId, name)` corresponds to `POST /api/folders`.
+- `moveNodeForUi(nodeId, newParentId)` corresponds to `POST /api/move`.
+- `getMarkdownFile(fileId)` corresponds to `GET /api/markdown?fileId=<node-id>`.
+- Current API routes use `db.ts` as their storage layer.
 
 ### Frontend Rendering Helpers And State
 
@@ -669,39 +745,59 @@ Reactive state:
 - `tree`: latest `TreeNode[]` returned from `/api/tree` or a mutation route.
 - `pending`: whether the initial tree request is loading.
 - `error`: whether the initial tree request failed.
-- `displayNodes`: computed flat display rows derived from `tree.value`.
+- `allDisplayNodes`: full flattened display rows derived from `tree.value`.
+- `visibleDisplayNodes`: collapsed-aware display rows used by the template.
+- `collapsedFolderIds`: UI-only `Set<string>` of collapsed folder ids.
 - `selectedNodeId`: currently selected node id, or `null`.
 - `selectedNodeType`: currently selected node type, or `null`.
+- `moveDestinationValue`: current move dropdown value.
+- `markdownPreview`: current loaded Markdown preview, or `null`.
+- `previewPending`: whether preview content is loading.
+- `previewError`: preview-specific error state.
 
 Helpers / event handlers:
 
 ```ts
-flattenTree(tree: TreeNode[]): DisplayNode[]
+flattenTree(
+  nodes: TreeNode[],
+  depth: number,
+  ancestorIds: string[],
+  collapsedIds: Set<string> | null
+): DisplayNode[]
 selectNode(node: DisplayNode): void
 clearSelection(): void
 getCreateFolderParentId(): string | null
 handleCreateFolderClick(): Promise<void>
+handleMoveNodeClick(): Promise<void>
+loadMarkdownPreview(fileId: string): Promise<void>
+clearMarkdownPreview(): void
+isFolderCollapsed(nodeId: string): boolean
+expandFolder(folderId: string): void
+toggleFolderCollapsed(node: DisplayNode): void
 ```
 
 Expected behavior:
 
-- `flattenTree(tree)` converts nested `TreeNode[]` into flat display rows with `depth`.
-- `displayNodes` recomputes whenever `tree.value` changes.
-- `selectNode(node)` updates selection state so the clicked row can be highlighted.
+- `flattenTree(...)` converts nested `TreeNode[]` into flat display rows with `depth` and `ancestorIds`.
+- `allDisplayNodes` recomputes whenever `tree.value` changes.
+- `visibleDisplayNodes` recomputes whenever `tree.value` or `collapsedFolderIds` changes.
+- `selectNode(node)` updates selected row state and loads/clears preview depending on node type.
 - `clearSelection()` resets selection so creating a folder targets the virtual root.
-- `getCreateFolderParentId()` returns the selected folder id, or `null` if no folder is selected.
-- `handleCreateFolderClick()` gathers the folder name, calls the create-folder API route, assigns the returned tree to `tree.value`, and lets `displayNodes` recompute.
+- `getCreateFolderParentId()` returns the selected folder id, or `null` if no folder is selected or a file is selected.
+- `handleCreateFolderClick()` gathers the folder name, calls the create-folder API route, assigns the returned tree to `tree.value`, and expands the parent folder when relevant.
+- `handleMoveNodeClick()` calls the move API route, assigns the returned tree to `tree.value`, and expands the destination folder when relevant.
+- `toggleFolderCollapsed(node)` toggles folder visibility and clears hidden selection/preview when needed.
 
 ### Persistence / DB Operations
 
-These operations are used in stage 4.
+These operations are used in Stage 4 and the current MVP.
 
 ```ts
-ensureDatabase()
-seedDatabaseIfEmpty()
-loadNodes()
-insertFolder(parentId: string | null, name: string)
-updateNodeParent(nodeId: string, newParentId: string | null)
+ensureDatabase(): void
+seedDatabaseIfEmpty(): void
+loadNodes(): ExplorerNode[]
+insertFolder(parentId: string | null, name: string): ExplorerNode[]
+updateNodeParent(nodeId: string, newParentId: string | null): ExplorerNode[]
 ```
 
 Expected behavior:
@@ -709,8 +805,8 @@ Expected behavior:
 - `ensureDatabase()` creates the SQLite database/table if needed.
 - `seedDatabaseIfEmpty()` inserts the initial virtual hierarchy only when no node rows exist.
 - `loadNodes()` returns flat `ExplorerNode` rows from SQLite.
-- `insertFolder(parentId, name)` inserts one folder row.
-- `updateNodeParent(nodeId, newParentId)` updates one node's parent.
+- `insertFolder(parentId, name)` inserts one folder row after pure validation.
+- `updateNodeParent(nodeId, newParentId)` updates one node's parent and sort order after pure validation.
 
 ### Deferred Operations
 
@@ -721,11 +817,15 @@ Expected behavior:
 - Folder names cannot be empty.
 - `parentId` must be `null` or an existing folder node.
 - Files cannot contain children.
+- If a file is selected and the user clicks `+ Folder`, the UI sends `parentId = null` and creates at root.
 - A node cannot be moved into itself.
 - A folder cannot be moved into one of its descendants.
 - Unknown node IDs should fail clearly.
 - Unknown parent IDs should fail clearly.
 - File preview should fail clearly if the file node does not exist or its file path cannot be read.
+- Move-to-root is represented in the frontend with a sentinel string and converted to `null` before calling the API.
+- The current move location should be shown but disabled.
+- The move dropdown should use the full tree, not only visible collapsed rows.
 - The app should not allow operations that require physically moving or rewriting files in `files/`.
 
 ## 8. Test Plan
@@ -757,6 +857,7 @@ Mutation tests:
 
 Persistence tests:
 
+- SQLite database is created under `data/`.
 - Empty database is seeded once.
 - Existing database rows are loaded without reseeding.
 - Creating a folder persists after reload.
@@ -766,27 +867,49 @@ Preview tests:
 
 - `getMarkdownFile` returns content for a valid file node.
 - `getMarkdownFile` fails clearly for an unknown file node.
+- Selecting a folder clears preview.
+- Stale preview responses are ignored when the user selects another file first.
+
+Frontend interaction tests:
+
+- `allDisplayNodes` includes the full tree regardless of collapsed state.
+- `visibleDisplayNodes` hides descendants of collapsed folders.
+- Collapse hides descendants but leaves the folder row visible.
+- Expand restores descendants.
+- Files do not show a collapse toggle.
+- Move dropdown still includes valid collapsed folders as destinations.
+- Collapsing a parent of the selected file clears selection and preview.
+- Creating into a collapsed folder expands that folder.
+- Moving into a collapsed folder expands that folder.
 
 ## 9. Manual Acceptance Checklist
 
 - [ ] App starts locally.
 - [ ] Initial tree matches the expected hierarchy.
+- [ ] SQLite database is created under `data/`.
+- [ ] Initial database seed happens once.
 - [ ] Original files remain flat in `files/`.
 - [ ] Clicking a file shows Markdown preview.
+- [ ] Clicking a folder clears Markdown preview.
 - [ ] Creating a root folder updates the tree.
 - [ ] Creating a folder inside another folder updates the tree.
+- [ ] If a file is selected, creating a folder places it at root.
 - [ ] Moving a file updates the tree.
 - [ ] Moving a folder updates the tree.
 - [ ] Invalid moves are prevented.
 - [ ] User-created folders persist after app restart.
 - [ ] Moved nodes persist after app restart.
+- [ ] Folder collapse hides descendants.
+- [ ] Folder expand restores descendants.
+- [ ] Collapsed folders still appear as valid move destinations.
+- [ ] Collapsing the parent of a selected file clears preview.
+- [ ] Creating into a collapsed folder expands that folder.
+- [ ] Moving into a collapsed folder expands that folder.
 
 ## 10. Open Questions/Concerns
 
-- ⚠️ creating a folder beneath a file **should** throw an error. Currently this operation creates the folder at the root directory.
-- ⚠️ explicit deselect option?
-- Should IDs be deterministic slugs, generated UUIDs, or database-generated values?
-- Should unknown filename patterns be placed in the root, in an `unclassified` folder, or rejected during seeding?
+- Should IDs remain deterministic slugs, switch to generated UUIDs, or eventually use database-generated values?
+- Should unknown filename patterns be placed in the root, placed in an `unclassified` folder, or rejected during seeding?
 - Should duplicate folder names be allowed under the same parent?
-- Should `sortOrder` be assigned alphabetically, by seed order, or by explicit grouping order?
-- Should `node:sqlite` be used directly, or should the project switch to another SQLite package if Nuxt compatibility becomes awkward?
+- Should `sortOrder` be assigned by seed order, alphabetical order, user action order, or explicit manual ordering later?
+- Should collapse/expand state stay ephemeral, or should it eventually persist as a user preference?
