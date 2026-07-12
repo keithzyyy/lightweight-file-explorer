@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { loadNodes } from '../utils/node-store'
+import { loadNodes } from '../utils/db'
 
 /**
  * GET /api/markdown?fileId=<node-id>

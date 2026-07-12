@@ -1,5 +1,5 @@
 import { buildTree } from '../utils/tree'
-import { loadNodes } from '../utils/node-store'
+import { loadNodes } from '../utils/db'
 
 /**
  * GET /api/tree

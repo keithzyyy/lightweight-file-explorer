@@ -1,5 +1,5 @@
 import { buildTree } from '../utils/tree'
-import { updateNodeParent } from '../utils/node-store'
+import { updateNodeParent } from '../utils/db'
 
 type MoveNodeBody = {
   nodeId?: string

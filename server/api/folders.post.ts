@@ -1,5 +1,5 @@
 import { buildTree } from '../utils/tree'
-import { insertFolder } from '../utils/node-store'
+import { insertFolder } from '../utils/db'
 
 type CreateFolderBody = {
   parentId?: string | null
