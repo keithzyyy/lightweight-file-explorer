@@ -426,7 +426,7 @@ no tree row has the selected class
 User creates folder in UI
         |
         v
-handleCreateFolderClick()
+handleCreateFolderClick() // "+Folder", call folder api, update tree 
         |
         v
 getCreateFolderParentId()
@@ -435,7 +435,7 @@ getCreateFolderParentId()
 frontend sends POST /api/folders
         |
         v
-createFolderForUi(parentId, name)
+createFolderForUi(parentId, name) // function coresponding to above API
         |
         v
 validate parentId and folder name
@@ -447,7 +447,7 @@ insertFolder(parentId, name)
 loadNodes()
         |
         v
-buildTree(nodes)
+buildTree(nodes) // response to the frontend's call
         |
         v
 return updated TreeNode[] to UI
@@ -460,13 +460,25 @@ displayNodes recomputes and the tree UI rerenders
 ```
 #### Move file/folder in UI
 ```text
-User moves file/folder in UI
+User clicks a node (file/folder)
+--> selectedNodeId = node.id
         |
         v
-frontend sends POST /api/nodes/[id]/move
+Click a [Move to...] button
         |
         v
-moveNodeForUi(nodeId, newParentId)
+Trigger a dropdown below button: root + valid folder destinations
+--> Probably need selectedNodeType to inform valid destinations
+        |
+        v
+User chooses a destination from the dropdown
+--> moveDestinationParentId = selected value
+        |
+        v
+frontend sends POST /api/move
+        |
+        v
+moveNodeForUi(nodeId, newParentId) // function coresponding to above API
         |
         v
 validate nodeId, newParentId, and descendant rules
@@ -478,7 +490,7 @@ updateNodeParent(nodeId, newParentId)
 loadNodes()
         |
         v
-buildTree(nodes)
+buildTree(nodes) // response to the frontend's call
         |
         v
 return updated TreeNode[] to UI
@@ -640,8 +652,8 @@ getMarkdownFile(fileId: string): string
 Expected behavior:
 
 - `loadTree()` corresponds to `GET /api/tree`, implemented by `server/api/tree.get.ts`.
-- `createFolderForUi(parentId, name)` persists the folder creation and returns the updated tree.
-- `moveNodeForUi(nodeId, newParentId)` persists the move and returns the updated tree.
+- `createFolderForUi(parentId, name)` persists the folder creation and returns the updated tree. Corresponds to `POST /api/folder`, implemented by `server/api/folders.post.ts`.
+- `moveNodeForUi(nodeId, newParentId)` persists the move and returns the updated tree. Corresponds to `POST /api/move`.
 - `getMarkdownFile(fileId)` returns Markdown content for preview.
 
 ### Frontend Rendering Helpers And State
@@ -765,8 +777,9 @@ Preview tests:
 - [ ] User-created folders persist after app restart.
 - [ ] Moved nodes persist after app restart.
 
-## 10. Open Questions
+## 10. Open Questions/Concerns
 
+- ⚠️ creating a folder beneath a file **should** throw an error. Currently this operation creates the folder at the root directory.
 - Should IDs be deterministic slugs, generated UUIDs, or database-generated values?
 - Should unknown filename patterns be placed in the root, in an `unclassified` folder, or rejected during seeding?
 - Should duplicate folder names be allowed under the same parent?
