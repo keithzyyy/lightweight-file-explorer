@@ -381,32 +381,45 @@ function clearSelection() {
         <h1>File Explorer</h1>
 
         <div class="tree-actions">
-          <button type="button" @click.stop="handleCreateFolderClick">
-            + Folder
-          </button>
+          <div class="action-group">
+            <p class="action-heading">Actions</p>
 
-          <select
-            v-model="moveDestinationValue"
-            class="move-select"
-            :disabled="selectedNodeId === null"
-          >
-            <option
-              v-for="destination in moveDestinations"
-              :key="destination.value"
-              :value="destination.value"
-              :disabled="destination.disabled"
+            <button type="button" @click.stop="handleCreateFolderClick">
+              + Folder
+            </button>
+          </div>
+
+          <div class="action-group">
+            <p class="action-heading">Move selected item</p>
+
+            <label class="control-label" for="move-destination">
+              Destination
+            </label>
+
+            <select
+              id="move-destination"
+              v-model="moveDestinationValue"
+              class="move-select"
+              :disabled="selectedNodeId === null"
             >
-              {{ destination.label }}
-            </option>
-          </select>
+              <option
+                v-for="destination in moveDestinations"
+                :key="destination.value"
+                :value="destination.value"
+                :disabled="destination.disabled"
+              >
+                {{ destination.label }}
+              </option>
+            </select>
 
-          <button
-            type="button"
-            :disabled="!canMoveSelectedNode"
-            @click.stop="handleMoveNodeClick"
-          >
-            Move
-          </button>
+            <button
+              type="button"
+              :disabled="!canMoveSelectedNode"
+              @click.stop="handleMoveNodeClick"
+            >
+              Confirm Move
+            </button>
+          </div>
         </div>
       </div>
 
@@ -555,9 +568,30 @@ function clearSelection() {
 
 .tree-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 14px;
   width: 100%;
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+.action-heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563;
+}
+
+.control-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
 }
 
 .tree-actions button,
@@ -575,8 +609,8 @@ function clearSelection() {
 }
 
 .move-select {
-  flex: 1;
-  min-width: 140px;
+  width: 100%;
+  min-width: 0;
 }
 
 .tree-actions button:disabled,
