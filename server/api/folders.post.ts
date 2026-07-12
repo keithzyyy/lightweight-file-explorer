@@ -9,10 +9,7 @@ type CreateFolderBody = {
 /**
  * POST /api/folders
  *
- * Creates a virtual folder, then returns the updated tree.
- *
- * For now this updates server memory. Later, insertFolder can be
- * replaced with a SQLite-backed insert operation.
+ * Creates a virtual folder in SQLite, then returns the updated tree.
  */
 export default defineEventHandler(async (event) => {
 

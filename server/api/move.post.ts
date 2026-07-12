@@ -9,11 +9,8 @@ type MoveNodeBody = {
 /**
  * POST /api/move
  *
- * Moves a file/folder, then returns the updated tree.
+ * Moves a file/folder by updating SQLite, then returns the updated tree.
  *
- * For now this updates server memory through updateNodeParent().
- * Later, updateNodeParent can be replaced with a SQLite-backed UPDATE
- * operation without changing this API shape.
  */
 export default defineEventHandler(async (event) => {
 
