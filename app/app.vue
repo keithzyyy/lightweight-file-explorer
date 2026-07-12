@@ -29,6 +29,12 @@ type MoveDestination = {
   disabled: boolean
 }
 
+type MarkdownPreview = {
+  id: string
+  name: string
+  content: string
+}
+
 
 /*
 call the /api/tree endpoint to retrieve the markdown tree
@@ -104,6 +110,15 @@ const selectedNodeType = ref<'folder' | 'file' | null>(null)
 
 // Tracks the selected destination in the "Move to..." dropdown.
 const moveDestinationValue = ref<string>(ROOT_DESTINATION_VALUE)
+
+// Tracks the loaded Markdown preview for the selected file.
+const markdownPreview = ref<MarkdownPreview | null>(null)
+
+// Tracks whether the preview panel is waiting for Markdown content.
+const previewPending = ref(false)
+
+// Tracks preview-loading errors separately from the initial tree-loading error.
+const previewError = ref<string | null>(null)
 
 const selectedNode = computed(() => {
   /*
@@ -198,15 +213,72 @@ const canMoveSelectedNode = computed(() => {
 })
 
 /**
+ * Clears the Markdown preview panel.
+ *
+ * Side effect: resets preview content, loading state, and preview-specific
+ * error state. This is used when a folder is selected or selection is cleared.
+ */
+function clearMarkdownPreview(): void {
+  markdownPreview.value = null
+  previewPending.value = false
+  previewError.value = null
+}
+
+/**
+ * Loads Markdown content for a selected file node.
+ *
+ * Side effects:
+ * - clears the old preview
+ * - shows preview loading state
+ * - calls the Markdown preview API route
+ * - stores the returned Markdown content if the same file is still selected
+ */
+async function loadMarkdownPreview(fileId: string): Promise<void> {
+  markdownPreview.value = null
+  previewError.value = null
+  previewPending.value = true
+
+  try {
+    const preview = await $fetch<MarkdownPreview>('/api/markdown', {
+      query: { fileId }
+    })
+
+    // Race guard: only apply this response if the same file is still selected.
+    if (selectedNodeId.value === fileId && selectedNodeType.value === 'file') {
+      markdownPreview.value = preview
+      previewError.value = null
+    }
+  } catch (error) {
+    // Race guard: do not show an old error after the user selects another node.
+    if (selectedNodeId.value === fileId && selectedNodeType.value === 'file') {
+      markdownPreview.value = null
+      previewError.value = error instanceof Error ? error.message : 'Could not load Markdown preview.'
+    }
+  } finally {
+    // Race guard: do not hide the loading state for a newer preview request.
+    if (selectedNodeId.value === fileId && selectedNodeType.value === 'file') {
+      previewPending.value = false
+    }
+  }
+}
+
+/**
  * Selects a tree row.
  *
  * Side effect: updates reactive selection state, which lets the template
- * apply the selected CSS class to the clicked row.
+ * apply the selected CSS class to the clicked row. File selections also load
+ * the Markdown preview; folder selections clear the preview.
  */
 function selectNode(node: DisplayNode) {
   selectedNodeId.value = node.id
   selectedNodeType.value = node.type
   moveDestinationValue.value = ROOT_DESTINATION_VALUE
+
+  if (node.type === 'file') {
+    loadMarkdownPreview(node.id)
+  } else {
+    clearMarkdownPreview()
+  }
 }
 
 /**
@@ -297,6 +369,7 @@ function clearSelection() {
   selectedNodeId.value = null
   selectedNodeType.value = null
   moveDestinationValue.value = ROOT_DESTINATION_VALUE
+  clearMarkdownPreview()
 }
 
 </script>
@@ -367,7 +440,16 @@ function clearSelection() {
 
     <section class="preview-panel">
       <h2>Preview</h2>
-      <p>Select a Markdown file to preview its contents here.</p>
+
+      <p v-if="previewPending">Loading preview...</p>
+      <p v-else-if="previewError">{{ previewError }}</p>
+
+      <article v-else-if="markdownPreview" class="preview-document">
+        <h3>{{ markdownPreview.name }}</h3>
+        <pre class="preview-content">{{ markdownPreview.content }}</pre>
+      </article>
+
+      <p v-else>Select a Markdown file to preview its contents here.</p>
     </section>
   </main>
 </template>
@@ -388,6 +470,21 @@ function clearSelection() {
 
 .preview-panel {
   padding: 24px;
+}
+
+.preview-document h3 {
+  margin-top: 0;
+}
+
+.preview-content {
+  padding: 16px;
+  border: 1px solid #d9dee8;
+  border-radius: 4px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: Consolas, "Courier New", monospace;
+  line-height: 1.5;
+  background: #fbfcfe;
 }
 
 .tree-list {

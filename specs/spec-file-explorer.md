@@ -500,13 +500,13 @@ return updated TreeNode[] to UI
 User selects Markdown file
         |
         v
-GET /api/markdown/[id]
+GET /api/markdown?fileId=<node-id>
         |
         v
 getMarkdownFile(fileId)
         |
         v
-look up file node
+look up file node to identify filePath
         |
         v
 read Markdown content from filePath
@@ -514,6 +514,10 @@ read Markdown content from filePath
         v
 return Markdown text to preview panel
 ```
+
+When loading Markdown preview content, the frontend should only display the response if the selected node still matches the requested file id. This prevents slower responses from earlier file selections from overwriting the preview for the currently selected file.
+- E.g. if I click file A then quickly click file B, request B might finish first (preview shows file B) but request A finishes later (if no guard is applied, preview gets overwritten with file A),then the preview gets overwritten with file A
+- if File A’s response comes back after the user has already selected File B, the app ignores File A’s stale response.
 
 ### In-Memory Tree Operations
 
@@ -654,7 +658,7 @@ Expected behavior:
 - `loadTree()` corresponds to `GET /api/tree`, implemented by `server/api/tree.get.ts`.
 - `createFolderForUi(parentId, name)` persists the folder creation and returns the updated tree. Corresponds to `POST /api/folder`, implemented by `server/api/folders.post.ts`.
 - `moveNodeForUi(nodeId, newParentId)` persists the move and returns the updated tree. Corresponds to `POST /api/move`.
-- `getMarkdownFile(fileId)` returns Markdown content for preview.
+- `getMarkdownFile(fileId)` returns Markdown content for preview. Corresponds to `GET /api/markdown?fileId=<node-id>`.
 
 ### Frontend Rendering Helpers And State
 
@@ -780,6 +784,7 @@ Preview tests:
 ## 10. Open Questions/Concerns
 
 - ⚠️ creating a folder beneath a file **should** throw an error. Currently this operation creates the folder at the root directory.
+- ⚠️ explicit deselect option?
 - Should IDs be deterministic slugs, generated UUIDs, or database-generated values?
 - Should unknown filename patterns be placed in the root, in an `unclassified` folder, or rejected during seeding?
 - Should duplicate folder names be allowed under the same parent?
