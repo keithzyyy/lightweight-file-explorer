@@ -5659,15 +5659,9 @@ That gives you a very natural interaction: click the background to go back to ro
 >
 > to highlight indentation, instead of just relying on whitespace indentation via `depth`?
 
-<details><summary>8 previous messages</summary>
+<details><summary>6 previous messages</summary>
 
 > I’ll update the tree row rendering so each depth level gets a visible guide, while keeping your existing selection behavior and indentation logic intact. First I’ll read the current `app.vue` so I patch the exact structure you have now.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -Path app/app.vue`
->
-> </details>
 >
 > I’m going to make the indentation visual rather than purely spacing-based: each row will render small guide columns before the icon, and the last guide column gets a horizontal connector into the row label.
 >
@@ -5678,12 +5672,6 @@ That gives you a very natural interaction: click the background to go back to ro
 > </details>
 >
 > The patch is in. I’ll read back the updated component section so I can make sure the new guide markup and CSS landed in the right places.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -Path app/app.vue`
->
-> </details>
 >
 > The UI change is correct, but I noticed the existing explanatory comment still says indentation is done with `paddingLeft`. I’ll update that comment so future-you does not get sent down the wrong little corridor.
 >
@@ -5873,30 +5861,11 @@ which is why this CSS works:
 >
 > Here we are still on brainstorm mode, so read-only.
 
-<details><summary>4 previous messages</summary>
+<details><summary>2 previous messages</summary>
 
 > Good pause. I’ll inspect the current `app/`, `server/`, and section 6 of the spec read-only, then I’ll give you a proposed alignment pass rather than editing anything.
 >
-> <details><summary>Ran 3 commands</summary>
->
-> - Ran `Select-String -Path specs/spec-file-explorer.md -Pattern "## 6\. Core Operations / Function Interfaces" -Context 0,140`
-> - Ran `Get-ChildItem -Path app -Recurse -File | Select-Object -ExpandProperty FullName`
-> - Ran `Get-ChildItem -Path server -Recurse -File | Select-Object -ExpandProperty FullName`
->
-> </details>
->
 > I found the spec already has the flow diagrams, and the codebase has moved a bit further than the earlier mental model: there’s now a `node-store.ts` and a `folders.post.ts`. I’ll read those files too so the alignment advice is grounded.
->
-> <details><summary>Ran 6 commands</summary>
->
-> - Ran `Get-Content -Path server/utils/tree.ts`
-> - Ran `Get-Content -Path server/utils/db.ts`
-> - Ran `Get-Content -Path server/utils/node-store.ts`
-> - Ran `Get-Content -Path app/app.vue`
-> - Ran `Get-Content -Path server/api/tree.get.ts`
-> - Ran `Get-Content -Path server/api/folders.post.ts`
->
-> </details>
 </details>
 
 Yes, this is a good time to pause and align. I’d treat this as a spec cleanup plus a naming cleanup before adding more behavior.
@@ -6496,3 +6465,4514 @@ clicking empty panel still clears selection
 ```
 
 So the first change should be the spec. Then pure logic. Then storage wrapper. Then frontend naming. That gives us a clean staircase instead of a tangle.
+
+> Alright, let us edit for points 1 and 2 only
+
+<details><summary>25 previous messages</summary>
+
+> I’ll make only the first two changes: tighten section 6 of the spec, then align `server/utils/tree.ts` so exported functions match the spec and internal helpers use your `_` convention. I’ll read the project docs first, then patch just those two files.
+>
+> I’ve got the shape. I’ll patch the spec conservatively: add the new architecture/flow clarifications and keep the existing `buildTree` sample rather than sweeping it away. Then I’ll update only `tree.ts` names/exports.
+>
+> The first patch hit the spec’s existing encoding quirks around one line, so I’ll make the spec changes in smaller, safer chunks instead of one large replacement.
+>
+> I have the exact section lines now. I’ll patch section 6 in smaller pieces: convention first, then flow text, then operation groups.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+71 -10)
+>
+> </details>
+>
+> Spec convention and frontend-rendering flow are in. Next I’ll tighten the create-folder flow and operation-group contracts, still only in the spec.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+48 -34)
+>
+> </details>
+>
+> Now I’ll add the temporary in-memory store section and expand the frontend helper/state section, which is the main architectural clarification we wanted before more coding.
+>
+> The spec still has one encoded character sequence in the old `loadTree()` bullet, so I’ll target the surrounding headings instead of matching that line exactly.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+25 -7)
+>
+> </details>
+>
+> The temporary store section is now in place and the server API section is renamed. I’ll update the old frontend helper block into the richer state-plus-flow contract next.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+31 -11)
+>
+> </details>
+>
+> One last spec cleanup: I’ll fix the old `loadTree()` note and add typed DB operation signatures so this section reads like a contract.
+>
+> The only stubborn bit is an old mojibake character in one `loadTree()` bullet; I’ll leave that for a later encoding cleanup rather than using a non-patch edit. The rest of the section can still be aligned cleanly.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+3 -3)
+>
+> </details>
+>
+> Next I’ll align `server/utils/tree.ts`: exported functions become the module contract, and every internal helper gets the `_` prefix you chose.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./server/utils/tree.ts` (+22 -22)
+>
+> </details>
+>
+> The function renames are patched. I’ll do a quick read/search pass to catch missed references before considering this done.
+>
+> One cleanup remains in the spec: the old `loadTree()` bullet has an encoding artifact. I’m going to inspect the exact characters read-only and see if I can still patch it safely with `apply_patch`.
+>
+> That artifact includes a control character, which is why the patch matcher didn’t like it. I’ll leave it untouched in this pass rather than using a shell-based file rewrite, since we agreed on a careful patch-only editing flow. Next I’ll just tidy the exported `createFolder` signature spacing.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./server/utils/tree.ts` (+6 -3)
+>
+> </details>
+>
+> The two requested files are edited. I’ll review the diff now so I can summarize exactly what changed and catch anything accidental.
+>
+> The diff confirms the intended changes. One last attempt to remove the old question-marker line using the character as Git sees it; if it still resists, I’ll leave it for a separate encoding cleanup.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+1 -1)
+>
+> </details>
+>
+> Nice, that cleaned up. I’ll do one final read-back of the touched areas and skip build/tests since you asked only for spec/tree alignment in this pass.
+</details>
+
+Done. I edited only:
+
+- [specs/spec-file-explorer.md](D:/other-projects/take%20home%20software%20dev%20task/specs/spec-file-explorer.md:274)
+- [server/utils/tree.ts](D:/other-projects/take%20home%20software%20dev%20task/server/utils/tree.ts:25)
+
+In the spec, section 6 now has the implementation convention, frontend rendering flow, typed operation signatures, temporary in-memory store operations, frontend rendering helpers/state, and the renamed `Server API / UI-Facing Backend Operations` section.
+
+In `tree.ts`, the public contract is now clearer:
+
+```ts
+readMarkdownFileNames(...)
+organizeInitialFiles(...)
+buildTree(...)
+createFolder(...)
+moveNode(...)
+```
+
+Internal helpers are now prefixed with `_`, for example:
+
+```ts
+_createFolderNode(...)
+_getInitialParentId(...)
+_sortTreeNodes(...)
+_isDescendant(...)
+```
+
+I did not touch `node-store.ts`, `app.vue`, or API routes yet. I also did not run build/tests, since this pass was scoped to points 1 and 2 only.
+
+> Good. Now implement fixes on bullet points number 3-5. Just to confirm, I agree to have this `_ensureNodesInitialized()` prefixed with `_`
+
+<details><summary>12 previous messages</summary>
+
+> I’ll apply only points 3-5 now: refactor the in-memory store to delegate to pure tree operations, rename the frontend click handler, and add concise comments around the frontend state/side effects. I’ll inspect the current files first so I don’t stomp on your latest edits.
+>
+> I’ll now refactor `node-store.ts` so it stops duplicating folder validation/ID creation and instead calls the pure `createFolder`/`moveNode` operations from `tree.ts`. Then I’ll update `app.vue` naming/comments to match the spec’s frontend flow.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./server/utils/node-store.ts` (+55 -79)
+>
+> </details>
+>
+> The store now delegates to the pure operations and has `_ensureNodesInitialized()`. I’ll patch `app.vue` next: rename the click handler and add brief comments around the reactive state and side-effect functions.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+29 -2)
+>
+> </details>
+>
+> The frontend handler is renamed and comments are in. I’ll do a quick search/read-back for missed references and then run a build check unless it hits an environment problem.
+>
+> The read-back looks consistent: no stale `createFolder()` frontend handler remains, and the store has the new `updateNodeParent()` wrapper. I’ll run the Nuxt build now as a quick type/compile check.
+>
+> The build didn’t fail with a TypeScript error; it hit my 120-second timeout while Nuxt was still building. I’ll check for leftover Node processes, then rerun once with a longer timeout so we get a real pass/fail signal.
+>
+> There are still Node processes from around the timed-out build, so I’m going to inspect their command lines before doing anything heavy-handed.
+>
+> Those processes started with the timed-out build, and the command-line lookup is blocked. I’m going to stop just those build-time Node PIDs so they don’t keep running in the background, then rerun the build with a longer timeout.
+>
+> Cleaned up the timed-out build processes. I’ll rerun the build once with more room; if it times out again, I’ll report that rather than keep hammering it.
+>
+> Build passed on the second run. I’ll grab a concise diff summary so I can close with exactly what changed.
+</details>
+
+Implemented points 3-5.
+
+In [server/utils/node-store.ts](<./server/utils/node-store.ts>), I renamed `ensureNodesInitialized()` to `_ensureNodesInitialized()`, removed duplicated folder-creation logic, and made the store delegate to the pure operations:
+
+```ts
+nodes = createFolder(nodes!, parentId, name)
+nodes = moveNode(nodes!, nodeId, newParentId)
+```
+
+I also added `updateNodeParent(...)` for the future move flow.
+
+In [app.vue](<./app/app.vue>), I renamed the frontend handler from `createFolder()` to `handleCreateFolderClick()`, updated the button binding, and added comments/docstrings for `selectedNodeId`, `selectedNodeType`, `selectNode`, `getCreateFolderParentId`, `handleCreateFolderClick`, and `clearSelection`.
+
+Verification: `npm.cmd run build` passes. The first build attempt timed out, so I stopped the build-time Node processes and reran with a longer timeout; the second run completed successfully.
+
+> Let us start brainstorming for moving file/folder in UI. [spec-file-explorer.md](specs/spec-file-explorer.md) In the `Move file/folder in UI` section, I think the easiest thing to do is focus on implementing the API, which I have tried as a first attempt in [nodes.post.ts](server/api/nodes.post.ts), so please have a check and propose any corrections
+>
+> Then we can start thinking about the exact mechanic (dropdown), populate the template, define event handlers. Not to digress too much from my current prompt, but I think (still brainstorming) we can create a move button. That is, when a node (folder/file) is clicked, its entire descendants (file is just a singleton) are somehow highlighted and somehow trigger a mini drop down but just for the folders, but we need to figure out an option to move a subdirectory to the root. My initial instinct: Suppose we have the following secnario:
+> 300-product
+> |-- 310-product-a
+> |---- 310-governance
+> |--------310-ARCHITECTURE.md
+> |--------310-gov-high-level-spec.md
+>
+> ```
+> I wanna move 310-governance folder. Trigger a drop down as follows:
+> ```
+> root
+> |-- 300-product
+> |---- 310-product-a
+> ```
+>
+> So that if root is clicked, 310-governance will sit beneath the root, and the tree will be as follows:
+> 300-product
+> |-- 310-product-a
+> 310-governance
+> |--310-ARCHITECTURE.md
+> |--310-gov-high-level-spec.md
+>
+> if 300-product is clicked, 310-governance will sit beneath 300-product, and the tree will be as follows:
+> 300-product
+> |-- 310-product-a
+> |-- 310-governance
+> |----310-ARCHITECTURE.md
+> |----310-gov-high-level-spec.md
+>
+> Now I am thiniking whether to include or exclude 310-product-a because it will be a no-op.
+> (I realized that we should have made a sentinel root directory that encompasses everything from the beginning.)
+> ```
+> What do you think of this interface design with respect to the spec
+>
+> stay in read-only mode for now.
+
+<details><summary>1 previous message</summary>
+
+> I’ll stay read-only and inspect the move-related spec, your new API attempt, and the current store/tree utilities so the feedback matches the code that actually exists.
+</details>
+
+Your interface idea is solid and it fits the spec’s “simple Move to...” control. I’d make one adjustment: treat `root` as a **UI option**, not as a real folder node. You already have `parentId = null` for root, so no sentinel root directory is required for the data model.
+
+**API Attempt**
+Your [nodes.post.ts](D:/other-projects/take%20home%20software%20dev%20task/server/api/nodes.post.ts) is directionally right, but I’d correct a few things before wiring UI.
+
+Main issues:
+
+```ts
+if (typeof name !== 'string')
+```
+
+`name` does not exist in this file. For move, you want to validate `clickedNodeId` / `nodeId` and `newParentId`.
+
+I’d also rename:
+
+```ts
+clickedNodeId
+```
+
+to:
+
+```ts
+nodeId
+```
+
+because once the request reaches the API, it is no longer important that the node came from a click. It is simply “the node to move.”
+
+Also, your route file:
+
+```text
+server/api/nodes.post.ts
+```
+
+creates:
+
+```text
+POST /api/nodes
+```
+
+But the spec currently says:
+
+```text
+POST /api/nodes/[id]/move
+```
+
+Either is okay, but we should pick one. For MVP simplicity, I’d actually accept:
+
+```text
+POST /api/nodes/move
+```
+
+with body:
+
+```ts
+{
+  nodeId: string
+  newParentId: string | null
+}
+```
+
+That maps nicely to the operation:
+
+```ts
+moveNodeForUi(nodeId, newParentId)
+```
+
+If staying with your current `server/api/nodes.post.ts`, the route should be documented as `POST /api/nodes`, but I think `POST /api/nodes/move` is clearer.
+
+**Suggested API Shape**
+Conceptually:
+
+```ts
+type MoveNodeBody = {
+  nodeId?: string
+  newParentId?: string | null
+}
+```
+
+Validation should be:
+
+```text
+nodeId must be a string
+newParentId must be null, undefined, or a string
+undefined means null/root only if that is intentional
+```
+
+Then:
+
+```ts
+const nodes = updateNodeParent(nodeId, newParentId)
+return buildTree(nodes)
+```
+
+Your `updateNodeParent(...)` and pure `moveNode(...)` already handle the real validation: unknown node, invalid parent, file parent, self move, descendant move.
+
+**UI Design**
+I like your dropdown idea. I’d model the dropdown as “valid destination folders plus root.”
+
+For moving `310-governance`, destination options should be:
+
+```text
+root
+300-product
+310-product-a   maybe disabled or omitted because it is the current parent
+```
+
+I’d recommend **disable current parent** rather than omit it, at least while learning. It makes the UI explain itself:
+
+```text
+root
+300-product
+310-product-a (current location)
+```
+
+For folders, exclude:
+
+```text
+the folder itself
+all descendants of that folder
+files
+```
+
+For files, exclude:
+
+```text
+files
+current parent as enabled destination
+```
+
+Root is always allowed unless the node is already at root, in which case root can be disabled as current location.
+
+**Frontend State**
+The move UI probably needs separate state from create-folder:
+
+```ts
+selectedNodeId
+selectedNodeType
+moveDestinationParentId
+```
+
+Then helpers:
+
+```ts
+getMoveDestinations(tree, selectedNodeId)
+handleMoveNodeClick()
+```
+
+Flow:
+
+```text
+User clicks node
+  -> selectedNodeId = node.id
+
+Dropdown shows root + valid folder destinations
+
+User chooses destination
+  -> moveDestinationParentId = selected value
+
+User clicks Move
+  -> POST move API { nodeId, newParentId }
+
+Server returns updated TreeNode[]
+  -> tree.value = updatedTree
+  -> displayNodes recomputes
+```
+
+So yes: API first is the right next slice. Then we can add dropdown mechanics once the backend move route is clean.
+
+> would it be brief to just create the API `POST /api/move` with body
+> ```
+> {
+>   nodeId: string
+>   newParentId: string | null
+> }
+> ``` (by the way i agree with renaming to `nodeId`)
+> Because i feel like unless we have another endpoint beneath `nodes` i dont see the point in creating `nodes/move`. If we agree then I will update the `frontend sends POST /api/nodes/[id]/move` line.
+>
+> - I agree with disabling current parent as an option but with a current location indicator (`310-product-a (current location)`)
+> - I agree with what is excluded in the mini-dropdown for moving folders and files.
+>
+> Also... what do we think about creating another dropdown versus using the existing LHS to click the destination (with a move to root button perhaps)? So for folders, the folder itself & all descendants, and files are somehow greyed out in the tree, likewise for files? But I think creating a dropdown right below the Move button is closer to MVP.
+
+Yes, `POST /api/move` is completely reasonable for this MVP.
+
+I’d use:
+
+```text
+POST /api/move
+```
+
+with:
+
+```ts
+{
+  nodeId: string
+  newParentId: string | null
+}
+```
+
+It is short, clear, and maps directly to the operation:
+
+```ts
+moveNodeForUi(nodeId, newParentId)
+```
+
+The more REST-ish route would be something like:
+
+```text
+POST /api/nodes/[id]/move
+```
+
+or:
+
+```text
+PATCH /api/nodes/[id]
+```
+
+but for this project, those are not meaningfully better. Since this app only has a small API surface, `POST /api/move` is fine. I’d update the spec line to:
+
+```text
+frontend sends POST /api/move
+```
+
+And in the backend operation section:
+
+```md
+- `moveNodeForUi(nodeId, newParentId)` corresponds to `POST /api/move`.
+```
+
+For the UI mechanic: I agree with your instinct. Use a dropdown under/near the Move button for MVP.
+
+The “click destination in the existing tree” idea is appealing, but it introduces more interaction state:
+
+```text
+normal mode
+move-picking mode
+disabled rows
+valid destination rows
+cancel move mode
+root destination button
+```
+
+That can be good later, but it’s more moving parts. For now, dropdown is more explicit and less likely to confuse future-you.
+
+I’d do:
+
+```text
+[Move to...] dropdown
+[Move] button
+```
+
+Destination options:
+
+```text
+root
+300-product
+310-product-a (current location) disabled
+311-epic-a
+312-epic-b
+```
+
+For a selected folder, exclude from the dropdown:
+
+```text
+itself
+its descendants
+files
+```
+
+For a selected file, exclude:
+
+```text
+files
+```
+
+And disable:
+
+```text
+current parent
+```
+
+Root is shown as:
+
+```text
+root
+```
+
+with value:
+
+```ts
+null
+```
+
+That keeps the mental model consistent:
+
+```text
+root option in UI = newParentId null in data/API
+```
+
+So the MVP flow becomes:
+
+```text
+User selects node
+  -> selectedNodeId / selectedNodeType set
+
+Dropdown appears or becomes enabled
+  -> options are valid folders + root
+
+User selects destination
+  -> selectedMoveParentId set
+
+User clicks Move
+  -> POST /api/move { nodeId, newParentId }
+
+Server returns updated tree
+  -> tree.value = updatedTree
+```
+
+I’d avoid using the existing tree as the destination picker until after the dropdown version works. The dropdown is a small, boring interface, and “small and boring” is very powerful at this stage.
+
+> In [move.post.ts](server/api/move.post.ts) do we still need to validate arguments?
+
+Yes, but only the **request shape**.
+
+The API route should validate things that are about the HTTP request body:
+
+```ts
+nodeId must be a string
+newParentId must be string, null, or undefined
+```
+
+Then deeper business-rule validation should stay in your tree/store logic:
+
+```text
+Does nodeId exist?
+Does newParentId exist?
+Is newParentId a folder?
+Is nodeId being moved into itself?
+Is a folder being moved into one of its descendants?
+```
+
+Those already belong in:
+
+```ts
+moveNode(...)
+```
+
+called through:
+
+```ts
+updateNodeParent(...)
+```
+
+So `move.post.ts` should not duplicate all that logic. It should just prevent obviously malformed request bodies from reaching the store.
+
+Example shape:
+
+```ts
+type MoveNodeBody = {
+  nodeId?: string
+  newParentId?: string | null
+}
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody<MoveNodeBody>(event)
+
+  if (typeof body.nodeId !== 'string') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'nodeId is required.'
+    })
+  }
+
+  if (
+    body.newParentId !== undefined &&
+    body.newParentId !== null &&
+    typeof body.newParentId !== 'string'
+  ) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'newParentId must be a string or null.'
+    })
+  }
+
+  const newParentId = body.newParentId ?? null
+
+  try {
+    const nodes = updateNodeParent(body.nodeId, newParentId)
+    return buildTree(nodes)
+  } catch (error) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: error instanceof Error ? error.message : 'Could not move node.'
+    })
+  }
+})
+```
+
+So the split is:
+
+```text
+move.post.ts
+  validates request shape
+
+updateNodeParent / moveNode
+  validates file explorer rules
+```
+
+That’s the right separation.
+
+> Alright rewrite [move.post.ts](server/api/move.post.ts) but add and preserve (optionally modify) docstrings and comments.
+
+<details><summary>5 previous messages</summary>
+
+> I’ll rewrite only `server/api/move.post.ts`, keeping the route focused on request-shape validation and leaving explorer-rule validation in `updateNodeParent`/`moveNode`. First I’ll read the current file so I preserve any comments worth keeping.
+>
+> I see the current route has the right imports and intent, but the validation is still copied from the folder route (`name` check). I’ll patch it into a clean `POST /api/move` handler with request-shape validation and preserved comments.
+>
+> All project-context docs are checked. I’ll apply the route rewrite now.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./server/api/move.post.ts` (+47 -34)
+>
+> </details>
+>
+> The route is rewritten. I’ll read it back once and run a quick build check so we know the handler compiles.
+</details>
+
+Rewrote [server/api/move.post.ts](<./server/api/move.post.ts>) for `POST /api/move`.
+
+What changed:
+
+- Renamed the body type to `MoveNodeBody`.
+- Body shape is now:
+
+```ts
+{
+  nodeId?: string
+  newParentId?: string | null
+}
+```
+
+- Validates only request shape:
+  - `nodeId` must be a string.
+  - `newParentId` must be `string`, `null`, or omitted.
+- Leaves explorer-rule validation to `updateNodeParent()` / `moveNode()`.
+- Preserved and updated docstrings/comments to explain the in-memory-for-now, SQLite-later boundary.
+
+Verification: `npm.cmd run build` passes.
+
+<details><summary>1 previous message</summary>
+
+> Context compaction
+>
+> Source: automatic
+> Status: completed
+</details>
+
+> Look at the `Move file/folder in UI` section in [spec-file-explorer.md](specs/spec-file-explorer.md) as well as the current shape of the app in [app.vue](app/app.vue). What do we think about the rough plan in the spec
+
+<details><summary>2 previous messages</summary>
+
+> I’ll stay read-only here and line up the move-UI idea against both the written spec and the current `app.vue` shape. I’m going to skim the project guidance plus the two files you named so the feedback is grounded, not hand-wavy.
+>
+> The spec and `app.vue` are mostly telling the same story now: the app already has the selection primitive needed for both create-folder and move. I’m going to quickly check the current move endpoint/store shape too, because the UI plan depends on whether the backend already accepts the exact `nodeId/newParentId` contract.
+</details>
+
+I think the rough plan in `Move file/folder in UI` is solid and matches the current app shape well.
+
+The important thing is: `app.vue` already has the key primitive for move behavior:
+
+```ts
+selectedNodeId
+selectedNodeType
+selectNode(node)
+displayNodes
+tree.value = updatedTree
+```
+
+So moving can follow the same pattern as create-folder:
+
+```text
+select node
+choose destination folder/root
+POST /api/move
+replace tree.value with returned tree
+displayNodes recomputes
+UI rerenders
+```
+
+A few refinements I’d make before implementing:
+
+1. Keep the dropdown MVP
+   A dropdown/select near the tree controls is simpler and closer to the spec than “click destination in the tree.” The click-destination version is more interactive, but it adds extra UI mode state like `isMoving`, disabled tree rows, cancel move, etc. Good later, heavier now.
+
+2. Add one extra frontend helper shape
+   Current `displayNodes` only has `depth`. For move destination filtering, it would help if flattened rows also had `ancestorIds`, e.g.
+
+```ts
+type DisplayNode = TreeNode & {
+  depth: number
+  ancestorIds: string[]
+}
+```
+
+That makes it easy to exclude descendants when moving a folder.
+
+3. Destination list should be computed, not manually maintained
+   Add something like:
+
+```ts
+moveDestinations = computed(...)
+```
+
+It should produce:
+
+```text
+root
+300-product
+  310-product-a
+    310-governance
+    311-epic-a
+    312-epic-b
+```
+
+For a folder move, exclude itself and descendants. For a file move, include folders plus root.
+
+4. Current parent should be disabled
+   I agree with your spec note: show it as something like:
+
+```text
+310-product-a (current location)
+```
+
+but disable it. That teaches the user where the node currently lives without letting them submit a no-op.
+
+5. API shape is good
+   `POST /api/move` with:
+
+```ts
+{
+  nodeId: string
+  newParentId: string | null
+}
+```
+
+is clean. Your current backend is already aligned with that: route validates request shape, then `updateNodeParent()` delegates to `moveNode()` for deeper rules like “cannot move folder into descendant.”
+
+Only caution: HTML `<select>` values are strings, while root is `null`, so the UI probably needs a small sentinel value like `"__root__"` and then converts it back to `null` before calling `/api/move`.
+
+So overall: the spec plan is implementation-ready. The next code step would be mostly in `app.vue`: add destination state, compute valid destinations, render the dropdown + Move button, then call `/api/move` and assign `tree.value = updatedTree`.
+
+> These are good plans, but just to clarify, for point two is it for tracking descendants?
+
+Yes, exactly. Adding `ancestorIds` to each flattened `DisplayNode` is mainly for tracking descendants in the UI.
+
+Example:
+
+```ts
+{
+  id: '310-governance',
+  name: '310-governance',
+  depth: 2,
+  ancestorIds: ['300-product', '310-product-a']
+}
+```
+
+Then if you are moving `310-product-a`, the UI can tell that `310-governance` is inside it because:
+
+```ts
+node.ancestorIds.includes('310-product-a')
+```
+
+That lets the move dropdown exclude invalid destinations before the user even clicks Move.
+
+The backend still remains the real authority through `moveNode()` and `_isDescendant()`. The frontend `ancestorIds` is just for creating a helpful dropdown. It prevents obviously invalid options from showing up, but the server still validates the rule properly.
+
+> Alright good, we are being extra defensive for invalid moves in the frontend which I do not mind. Based on the above points, generate a specific plan on what exactly in [app.vue](app/app.vue) are you going to edit. Stay in plan mode now.
+
+<details><summary>1 previous message</summary>
+
+> Plan
+>
+> # Plan: Add Move UI To `app.vue`
+>
+> ## Summary
+>
+> Add a simple MVP move control to `app/app.vue`: select a file/folder in the left tree, choose a valid destination from a dropdown, click `Move`, call `POST /api/move`, then replace `tree.value` with the updated tree returned by the server.
+>
+> No backend files are changed in this plan.
+>
+> ## Key Changes
+>
+> - Extend `DisplayNode` with descendant-tracking metadata:
+>   ```ts
+>   type DisplayNode = TreeNode & {
+>     depth: number
+>     ancestorIds: string[]
+>   }
+>   ```
+>   Update `flattenTree()` to pass `ancestorIds` recursively so the UI can exclude invalid descendant destinations.
+>
+> - Add move-specific state and types:
+>   ```ts
+>   const ROOT_DESTINATION_VALUE = '__root__'
+>   const moveDestinationValue = ref<string>(ROOT_DESTINATION_VALUE)
+>
+>   type MoveDestination = {
+>     value: string
+>     parentId: string | null
+>     label: string
+>     disabled: boolean
+>   }
+>   ```
+>
+> - Add computed helpers:
+>   ```ts
+>   const selectedNode = computed(...)
+>   const moveDestinations = computed<MoveDestination[]>(...)
+>   const selectedMoveDestination = computed(...)
+>   const canMoveSelectedNode = computed(...)
+>   ```
+>   Destination rules:
+>   - Include `root`, mapped to `parentId: null`.
+>   - Include folder nodes only.
+>   - Exclude the selected folder itself.
+>   - Exclude descendants of the selected folder using `ancestorIds`.
+>   - Disable the current parent destination and label it with `(current location)`.
+>   - Disable root when the selected node already has `parentId === null`.
+>
+> - Update existing selection handlers:
+>   - `selectNode(node)` still sets `selectedNodeId` and `selectedNodeType`.
+>   - It also resets `moveDestinationValue` to `ROOT_DESTINATION_VALUE`.
+>   - `clearSelection()` also resets the move destination.
+>
+> - Add move event handler:
+>   ```ts
+>   async function handleMoveNodeClick() { ... }
+>   ```
+>   Behavior:
+>   - Return early if no selected node.
+>   - Return early if selected destination is missing or disabled.
+>   - Call:
+>     ```ts
+>     $fetch<TreeNode[]>('/api/move', {
+>       method: 'POST',
+>       body: {
+>         nodeId: selectedNodeId.value,
+>         newParentId: selectedMoveDestination.value.parentId
+>       }
+>     })
+>     ```
+>   - Assign response to `tree.value`.
+>   - Reset destination to root after success.
+>   - Show a simple `alert()` if the move fails.
+>
+> ## Template Changes
+>
+> - Move the tree controls into the left tree panel so they sit with the file explorer.
+> - Replace the duplicate heading structure with one tree header inside `<aside>`.
+> - Add controls near `+ Folder`:
+>   ```vue
+>   <select v-model="moveDestinationValue" :disabled="selectedNodeId === null">
+>     <option
+>       v-for="destination in moveDestinations"
+>       :key="destination.value"
+>       :value="destination.value"
+>       :disabled="destination.disabled"
+>     >
+>       {{ destination.label }}
+>     </option>
+>   </select>
+>
+>   <button
+>     type="button"
+>     :disabled="!canMoveSelectedNode"
+>     @click.stop="handleMoveNodeClick"
+>   >
+>     Move
+>   </button>
+>   ```
+> - Keep the existing tree row rendering and selection highlight.
+>
+> ## CSS Changes
+>
+> - Add small styles for the new controls:
+>   - `.tree-header`
+>   - `.tree-actions`
+>   - `.move-select`
+>   - disabled button/select states
+> - Preserve existing tree row, guide-line, and selected-row styling.
+>
+> ## Test / Manual Checks
+>
+> - Select a file and move it to root.
+> - Select a file and move it to a different folder.
+> - Select a folder and move it to root.
+> - Select a folder and move it to another valid folder.
+> - Confirm the selected folder itself is not shown as a destination.
+> - Confirm descendants are not shown as destinations when moving a folder.
+> - Confirm current parent appears but is disabled.
+> - Confirm clicking empty panel clears selection and disables move controls.
+> - Confirm the tree rerenders after successful move.
+>
+> ## Assumptions
+>
+> - `POST /api/move` already exists and accepts `{ nodeId, newParentId }`.
+> - Backend validation remains the source of truth for invalid moves.
+> - This is still Stage 3 in-memory behavior; persistence is deferred.
+> - The move UI uses a dropdown for MVP, not drag-and-drop or click-destination mode.
+</details>
+
+I’ll keep this strictly planning-only. I’m going to re-check the current `app.vue` and the move section in the spec so the plan is anchored to the exact code shape we have now.
+
+> Implement the plan, but make sure to add docstrings and comments like what is currently in the `app.vue`.
+
+<details><summary>1 previous message</summary>
+
+> Plan
+>
+> # Plan: Implement Move UI In `app.vue`
+>
+> ## Summary
+>
+> Edit only `app/app.vue` to add a dropdown-based move control. The UI will let the user select a file/folder, choose `root` or a valid folder destination, click `Move`, call `POST /api/move`, and replace `tree.value` with the returned updated tree.
+>
+> ## Key Changes
+>
+> - Extend `DisplayNode`:
+>   ```ts
+>   type DisplayNode = TreeNode & {
+>     depth: number
+>     ancestorIds: string[]
+>   }
+>   ```
+>   Update `flattenTree()` to carry `ancestorIds` recursively, with comments explaining that this lets the frontend identify descendants when building move options.
+>
+> - Add move state:
+>   ```ts
+>   const ROOT_DESTINATION_VALUE = '__root__'
+>   const moveDestinationValue = ref<string>(ROOT_DESTINATION_VALUE)
+>   ```
+>   Add comments explaining that HTML `<select>` values are strings, so root uses a sentinel value and is converted back to `null` before calling the API.
+>
+> - Add `MoveDestination` type:
+>   ```ts
+>   type MoveDestination = {
+>     value: string
+>     parentId: string | null
+>     label: string
+>     disabled: boolean
+>   }
+>   ```
+>
+> - Add docstring-commented computed helpers:
+>   ```ts
+>   const selectedNode = computed(...)
+>   const moveDestinations = computed<MoveDestination[]>(...)
+>   const selectedMoveDestination = computed(...)
+>   const canMoveSelectedNode = computed(...)
+>   ```
+>   Destination rules:
+>   - `root` is included and maps to `parentId: null`.
+>   - Only folders are included as non-root destinations.
+>   - The selected folder itself is excluded.
+>   - Descendant folders are excluded using `ancestorIds`.
+>   - The current parent/root location is included but disabled and labelled `(current location)`.
+>
+> - Update handlers:
+>   - `selectNode(node)` also resets `moveDestinationValue`.
+>   - `clearSelection()` also resets `moveDestinationValue`.
+>   - Add `handleMoveNodeClick()` with a docstring and inline comments for:
+>     - checking a selected node exists
+>     - checking the selected destination is valid
+>     - calling `/api/move`
+>     - assigning the returned tree to `tree.value`
+>     - resetting destination after success
+>     - showing `alert()` on failure
+>
+> ## Template Changes
+>
+> - Move controls into the left file explorer panel header.
+> - Remove the duplicate top-level `File Explorer` heading outside the main app shell.
+> - Keep the existing `+ Folder` button.
+> - Add:
+>   ```vue
+>   <select v-model="moveDestinationValue" :disabled="selectedNodeId === null">
+>     <option
+>       v-for="destination in moveDestinations"
+>       :key="destination.value"
+>       :value="destination.value"
+>       :disabled="destination.disabled"
+>     >
+>       {{ destination.label }}
+>     </option>
+>   </select>
+>
+>   <button
+>     type="button"
+>     :disabled="!canMoveSelectedNode"
+>     @click.stop="handleMoveNodeClick"
+>   >
+>     Move
+>   </button>
+>   ```
+>
+> ## CSS Changes
+>
+> - Add compact styles for:
+>   - `.tree-header`
+>   - `.tree-actions`
+>   - `.move-select`
+>   - disabled buttons/selects
+> - Preserve existing selected-row and tree guide styling.
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually inspect that:
+>   - selecting a file enables move controls
+>   - selecting a folder enables move controls
+>   - current parent/root is disabled
+>   - selected folder and descendants do not appear as destinations
+>   - successful move rerenders the tree
+>   - clicking empty panel clears selection and disables move
+>
+> ## Assumptions
+>
+> - No backend changes are needed because `POST /api/move` already accepts `{ nodeId, newParentId }`.
+> - Backend validation remains the real source of truth.
+> - This stays in the current in-memory Stage 3 behavior.
+</details>
+
+I’m still in Plan Mode, so I won’t edit `app.vue` yet. Here is the implementation-ready version with your added requirement locked in: preserve the same learning-oriented docstring/comment style already in the file.
+
+> PLEASE IMPLEMENT THIS PLAN:
+> # Plan: Implement Move UI In `app.vue`
+>
+> ## Summary
+>
+> Edit only `app/app.vue` to add a dropdown-based move control. The UI will let the user select a file/folder, choose `root` or a valid folder destination, click `Move`, call `POST /api/move`, and replace `tree.value` with the returned updated tree.
+>
+> ## Key Changes
+>
+> - Extend `DisplayNode`:
+>   ```ts
+>   type DisplayNode = TreeNode & {
+>     depth: number
+>     ancestorIds: string[]
+>   }
+>   ```
+>   Update `flattenTree()` to carry `ancestorIds` recursively, with comments explaining that this lets the frontend identify descendants when building move options.
+>
+> - Add move state:
+>   ```ts
+>   const ROOT_DESTINATION_VALUE = '__root__'
+>   const moveDestinationValue = ref<string>(ROOT_DESTINATION_VALUE)
+>   ```
+>   Add comments explaining that HTML `<select>` values are strings, so root uses a sentinel value and is converted back to `null` before calling the API.
+>
+> - Add `MoveDestination` type:
+>   ```ts
+>   type MoveDestination = {
+>     value: string
+>     parentId: string | null
+>     label: string
+>     disabled: boolean
+>   }
+>   ```
+>
+> - Add docstring-commented computed helpers:
+>   ```ts
+>   const selectedNode = computed(...)
+>   const moveDestinations = computed<MoveDestination[]>(...)
+>   const selectedMoveDestination = computed(...)
+>   const canMoveSelectedNode = computed(...)
+>   ```
+>   Destination rules:
+>   - `root` is included and maps to `parentId: null`.
+>   - Only folders are included as non-root destinations.
+>   - The selected folder itself is excluded.
+>   - Descendant folders are excluded using `ancestorIds`.
+>   - The current parent/root location is included but disabled and labelled `(current location)`.
+>
+> - Update handlers:
+>   - `selectNode(node)` also resets `moveDestinationValue`.
+>   - `clearSelection()` also resets `moveDestinationValue`.
+>   - Add `handleMoveNodeClick()` with a docstring and inline comments for:
+>     - checking a selected node exists
+>     - checking the selected destination is valid
+>     - calling `/api/move`
+>     - assigning the returned tree to `tree.value`
+>     - resetting destination after success
+>     - showing `alert()` on failure
+>
+> ## Template Changes
+>
+> - Move controls into the left file explorer panel header.
+> - Remove the duplicate top-level `File Explorer` heading outside the main app shell.
+> - Keep the existing `+ Folder` button.
+> - Add:
+>   ```vue
+>   <select v-model="moveDestinationValue" :disabled="selectedNodeId === null">
+>     <option
+>       v-for="destination in moveDestinations"
+>       :key="destination.value"
+>       :value="destination.value"
+>       :disabled="destination.disabled"
+>     >
+>       {{ destination.label }}
+>     </option>
+>   </select>
+>
+>   <button
+>     type="button"
+>     :disabled="!canMoveSelectedNode"
+>     @click.stop="handleMoveNodeClick"
+>   >
+>     Move
+>   </button>
+>   ```
+>
+> ## CSS Changes
+>
+> - Add compact styles for:
+>   - `.tree-header`
+>   - `.tree-actions`
+>   - `.move-select`
+>   - disabled buttons/selects
+> - Preserve existing selected-row and tree guide styling.
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually inspect that:
+>   - selecting a file enables move controls
+>   - selecting a folder enables move controls
+>   - current parent/root is disabled
+>   - selected folder and descendants do not appear as destinations
+>   - successful move rerenders the tree
+>   - clicking empty panel clears selection and disables move
+>
+> ## Assumptions
+>
+> - No backend changes are needed because `POST /api/move` already accepts `{ nodeId, newParentId }`.
+> - Backend validation remains the real source of truth.
+> - This stays in the current in-memory Stage 3 behavior.
+
+<details><summary>13 previous messages</summary>
+
+> I’ll implement just `app/app.vue` as requested. I’m first re-reading the project docs the repo asks me to check before edits, then I’ll patch the Vue file and run the Nuxt build.
+>
+> I’ve got the shape now. The edit will stay local to `app.vue`: one data-flow addition in `<script setup>`, a small controls block in the left panel, and CSS for the select/button row.
+>
+> Before editing: the one subtle UI thing is that the whole left panel currently clears selection when clicked, so the new controls need `@click.stop` around them. Otherwise opening the move dropdown would accidentally clear the selected node.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+235 -19)
+>
+> </details>
+>
+> The patch is in place. I’m reading the file back now for a sanity pass before building, mainly checking the dropdown state, click bubbling, and TypeScript shapes.
+>
+> The file reads cleanly. I’m going to run the project build now; that should catch template/type mistakes such as the select binding, computed values, or API call shape.
+>
+> Build passed, so the Vue/TypeScript side is healthy. I’m doing one final diff check so I can give you a clean summary of exactly what changed.
+>
+> The diff matches the requested scope: only `app.vue` changed. I’m going to start the Nuxt dev server in the background so you have a live URL to poke at the move dropdown.
+>
+> The dev server is running on port 3000. I’ll do one quick local HTTP check now so the URL I give you is not wishful thinking.
+>
+> The first HTTP probe missed it, so I’m checking whether the background process is still alive or exited during startup. If it exited, I’ll report that instead of pretending the server is usable.
+>
+> The background process exited, so I’m going to start it once more with logs redirected to a temp file. That gives us enough visibility to know whether Nuxt rejected the arguments or crashed during startup.
+>
+> The second start is healthy and shows Nuxt listening at `http://127.0.0.1:3000/`. I’ll do the HTTP check once more now that the server is fully warmed.
+>
+> That probe still cannot connect, even though the log said Nuxt started. I’m checking the process and listener one more time; if it died after startup, I’ll leave you with the build-verified change and the exact issue.
+</details>
+
+Implemented the move UI in [app/app.vue](<./app/app.vue>).
+
+What changed:
+- Added `ancestorIds` to `DisplayNode` so the frontend can filter descendant destinations.
+- Added move dropdown state, destination computation, and `handleMoveNodeClick()`.
+- Added `POST /api/move` call from the UI.
+- Moved controls into the left tree panel header and removed the duplicate top-level heading.
+- Added compact CSS for the move select/button controls.
+- Kept the learning-style docstrings and inline comments.
+
+Verification:
+- `npm.cmd run build` passed.
+- I tried launching the dev server hidden from this tool session; Nuxt started in logs, but the process did not remain reachable afterward. To try it interactively, run `npm.cmd run dev` and open the printed local URL.
+
+> Ok let us focus on the `Preview markdown file` section of the spec, and propose an implementation of `server/api/markdown.get.ts`. Stay in plan mode for now. Feel free to ask clarifying questions
+
+<details><summary>1 previous message</summary>
+
+> I’ll keep this planning-only and won’t edit files. I’m going to inspect the preview section plus the current server route/storage patterns so the proposed `markdown.get.ts` fits the shape you already have.
+</details>
+
+One important route-shape clarification first: `server/api/markdown.get.ts` would create:
+
+```text
+GET /api/markdown?id=<fileId>
+```
+
+But the current spec says:
+
+```text
+GET /api/markdown/[id]
+```
+
+which would usually be implemented as:
+
+```text
+server/api/markdown/[id].get.ts
+```
+
+For now, since you specifically named `server/api/markdown.get.ts`, I’d propose using the query-param version: `GET /api/markdown?fileId=...`. It is simpler for this stage.
+
+**Proposed Backend Flow**
+
+```text
+GET /api/markdown?fileId=310-architecture
+        |
+        v
+read query.fileId
+        |
+        v
+validate fileId is string
+        |
+        v
+loadNodes()
+        |
+        v
+find node with node.id === fileId
+        |
+        v
+validate node exists
+validate node.type === 'file'
+validate node.filePath is not null
+        |
+        v
+read Markdown file from node.filePath
+        |
+        v
+return { id, name, content }
+```
+
+**Proposed `server/api/markdown.get.ts`**
+
+```ts
+import { readFileSync } from 'node:fs'
+import { loadNodes } from '../utils/node-store'
+
+/**
+ * GET /api/markdown?fileId=<node-id>
+ *
+ * Reads the Markdown content for a selected file node.
+ *
+ * This does not read arbitrary paths from the request. The request provides
+ * a file node id, then the server looks up that node and uses its stored
+ * filePath. That keeps file access tied to the virtual explorer model.
+ */
+export default defineEventHandler((event) => {
+  // Query params come from the URL, e.g. /api/markdown?fileId=310-architecture
+  const query = getQuery(event)
+  const fileId = query.fileId
+
+  // Validate request shape before touching the node store.
+  if (typeof fileId !== 'string') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'fileId is required.'
+    })
+  }
+
+  const nodes = loadNodes()
+
+  // Look up the virtual file node first. The client should not send file paths.
+  const fileNode = nodes.find((node) => node.id === fileId)
+
+  if (!fileNode) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: `File node not found: ${fileId}`
+    })
+  }
+
+  // Folders cannot be previewed as Markdown files.
+  if (fileNode.type !== 'file') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Node is not a file: ${fileId}`
+    })
+  }
+
+  if (fileNode.filePath === null) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: `File node has no filePath: ${fileId}`
+    })
+  }
+
+  try {
+    // Read the real Markdown file referenced by the virtual file node.
+    const content = readFileSync(fileNode.filePath, 'utf8')
+
+    return {
+      id: fileNode.id,
+      name: fileNode.name,
+      content
+    }
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: error instanceof Error ? error.message : 'Could not read Markdown file.'
+    })
+  }
+})
+```
+
+I’d maybe name the query parameter `fileId` rather than just `id`, because it makes frontend code more self-explanatory:
+
+```ts
+await $fetch('/api/markdown', {
+  query: { fileId: selectedNodeId.value }
+})
+```
+
+Later, if you want to match the spec literally, we can switch to `server/api/markdown/[id].get.ts` and call `/api/markdown/310-architecture`.
+
+> Yep I agree with the query parameter version (I will update the spec later mysefl). I agree with the flow and implementation -- validating file id, fetching file path from the nodes. Lets create the file in `server/api` and edit directly.
+
+<details><summary>8 previous messages</summary>
+
+> I’ll add only the new API route in `server/api` and keep it aligned with the query-param flow we just agreed on. First I’m doing the required quick read of the project docs/current route shape, then I’ll patch the file and build.
+>
+> <details><summary>Ran 6 commands</summary>
+>
+> - Ran `Get-Content -LiteralPath 'internship-file-explorer-take-home-task.md'`
+> - Ran `Get-ChildItem -LiteralPath 'server/api'`
+> - Ran `Get-Content -LiteralPath 'specs/spec-file-explorer.md'`
+> - Ran `Get-Content -LiteralPath 'server/utils/node-store.ts'`
+> - Ran `Get-Content -LiteralPath 'README.md'`
+> - Ran `Get-Content -LiteralPath 'AI_USAGE.md'`
+>
+> </details>
+>
+> `server/api/markdown.get.ts` does not exist yet, so I’ll create that route now. I’ll keep the route intentionally small: request validation in the API file, node lookup through `loadNodes()`, and file reading through the stored `filePath`.
+>
+> <details><summary>Created a file</summary>
+>
+> - Wrote `./server/api/markdown.get.ts` (+69 -0)
+>
+> </details>
+>
+> The route file is created. I’m going to read it back and then run the Nuxt build so we catch any Nitro route/type issues before handing it back.
+>
+> <details><summary>Ran 2 commands</summary>
+>
+> - Ran `Get-Content -LiteralPath 'server/api/markdown.get.ts'`
+> - Ran `git diff -- server/api/markdown.get.ts`
+>
+> </details>
+>
+> The file matches the agreed implementation. One small note: because it’s a newly added untracked file, `git diff -- path` doesn’t show it unless staged, but the readback confirms the contents. Running the build now.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `npm.cmd run build`
+>
+> </details>
+</details>
+
+Created [markdown.get.ts](<./server/api/markdown.get.ts>).
+
+It implements:
+
+```text
+GET /api/markdown?fileId=<node-id>
+```
+
+Behavior:
+- validates `fileId`
+- loads current virtual nodes via `loadNodes()`
+- finds the matching file node
+- rejects unknown nodes, folders, or file nodes with no `filePath`
+- reads Markdown content from the stored `filePath`
+- returns `{ id, name, content }`
+
+Verification: `npm.cmd run build` passed. Nuxt still emits the existing sourcemap/deprecation warnings, but the new API route compiled successfully.
+
+> ok lets stay in brainstorm mode for now. In terms of previewing the md file, I was thinking that when a file node is clicked, the api endpoint is called directly, but when it is deselceted or a folder is chosen, then the preview disappears. What do we think about this based on current shape of [app.vue](app/app.vue)
+
+<details><summary>2 previous messages</summary>
+
+> I’ll keep this read-only and reason from the actual `app.vue` shape. I’ll quickly inspect the current selection/preview code so the brainstorm stays concrete.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `Get-Content -LiteralPath 'app/app.vue'`
+>
+> </details>
+</details>
+
+I think your proposed behavior fits the current `app.vue` shape very naturally.
+
+Right now, selection is centralized in:
+
+```ts
+selectedNodeId
+selectedNodeType
+selectNode(node)
+clearSelection()
+```
+
+So preview can piggyback on the same state transitions:
+
+```text
+click file
+  -> selectNode(file)
+  -> selectedNodeType = 'file'
+  -> call /api/markdown?fileId=<id>
+  -> preview panel shows content
+
+click folder
+  -> selectNode(folder)
+  -> selectedNodeType = 'folder'
+  -> clear preview content
+  -> preview panel returns to placeholder
+
+click empty tree panel
+  -> clearSelection()
+  -> clear preview content
+  -> preview panel returns to placeholder
+```
+
+That is a good MVP behavior. It is predictable and matches “selected file preview” mental model from file explorers.
+
+Implementation-wise, I’d add three bits of state:
+
+```ts
+type MarkdownPreview = {
+  id: string
+  name: string
+  content: string
+}
+
+const markdownPreview = ref<MarkdownPreview | null>(null)
+const previewPending = ref(false)
+const previewError = ref<string | null>(null)
+```
+
+Then update `selectNode(node)` to become the trigger point:
+
+```ts
+function selectNode(node: DisplayNode) {
+  selectedNodeId.value = node.id
+  selectedNodeType.value = node.type
+  moveDestinationValue.value = ROOT_DESTINATION_VALUE
+
+  if (node.type === 'file') {
+    loadMarkdownPreview(node.id)
+  } else {
+    clearMarkdownPreview()
+  }
+}
+```
+
+And update `clearSelection()` similarly:
+
+```ts
+function clearSelection() {
+  selectedNodeId.value = null
+  selectedNodeType.value = null
+  moveDestinationValue.value = ROOT_DESTINATION_VALUE
+  clearMarkdownPreview()
+}
+```
+
+The helper split I’d use:
+
+```ts
+function clearMarkdownPreview(): void
+async function loadMarkdownPreview(fileId: string): Promise<void>
+```
+
+That keeps `selectNode()` readable: selection state first, preview side effect second.
+
+One subtle thing: since preview loading is async, there is a possible race condition if you click file A, then quickly file B. For MVP, we can ignore it, but a slightly safer version checks that the selected node is still the same before assigning the returned preview:
+
+```ts
+const preview = await $fetch(...)
+if (selectedNodeId.value === fileId) {
+  markdownPreview.value = preview
+}
+```
+
+That’s a small defensive touch and worth doing.
+
+In the template, the preview panel can branch like:
+
+```vue
+<section class="preview-panel">
+  <h2>Preview</h2>
+
+  <p v-if="previewPending">Loading preview...</p>
+  <p v-else-if="previewError">{{ previewError }}</p>
+
+  <article v-else-if="markdownPreview">
+    <h3>{{ markdownPreview.name }}</h3>
+    <pre>{{ markdownPreview.content }}</pre>
+  </article>
+
+  <p v-else>Select a Markdown file to preview its contents here.</p>
+</section>
+```
+
+For now I’d render raw Markdown text in `<pre>`, not convert Markdown to HTML yet. That avoids adding a Markdown renderer dependency while we’re still proving the app flow.
+
+> alright implement these on [app.vue](app/app.vue) . Stay in plan mode. Feel free to ask clarifying questions.
+
+<details><summary>4 previous messages</summary>
+
+> I’ll keep this in Plan Mode and avoid editing. I’m going to re-check the current `app.vue` plus the new markdown API route so the plan maps exactly to the code that exists now.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `Get-Content -LiteralPath 'server/api/markdown.get.ts'`
+> - Ran `Get-Content -LiteralPath 'app/app.vue'`
+> - Ran `Select-String -LiteralPath 'specs/spec-file-explorer.md' -Pattern 'Preview markdown file' -Context 5,25`
+>
+> </details>
+>
+> Plan
+>
+> # Plan: Add Markdown Preview Behavior To `app.vue`
+>
+> ## Summary
+>
+> Edit only `app/app.vue` so clicking a file node loads Markdown text from `GET /api/markdown?fileId=<node-id>` into the preview panel. Clicking a folder or empty tree-panel space clears the preview.
+>
+> ## Key Changes
+>
+> - Add preview response type:
+>   ```ts
+>   type MarkdownPreview = {
+>     id: string
+>     name: string
+>     content: string
+>   }
+>   ```
+>
+> - Add preview state near the existing selection state:
+>   ```ts
+>   const markdownPreview = ref<MarkdownPreview | null>(null)
+>   const previewPending = ref(false)
+>   const previewError = ref<string | null>(null)
+>   ```
+>
+> - Add two commented helpers:
+>   ```ts
+>   function clearMarkdownPreview(): void
+>   async function loadMarkdownPreview(fileId: string): Promise<void>
+>   ```
+>   `loadMarkdownPreview()` will call:
+>   ```ts
+>   $fetch<MarkdownPreview>('/api/markdown', {
+>     query: { fileId }
+>   })
+>   ```
+>
+> - Add a small race guard in `loadMarkdownPreview()`:
+>   - if the user clicks file A, then quickly clicks file B or a folder, only apply the response if `selectedNodeId.value === fileId` and `selectedNodeType.value === 'file'`.
+>   - use the same guard before setting `previewError` or clearing `previewPending`.
+>
+> - Update `selectNode(node)`:
+>   - keep the current selection and move-dropdown behavior.
+>   - if `node.type === 'file'`, call `loadMarkdownPreview(node.id)`.
+>   - otherwise call `clearMarkdownPreview()`.
+>
+> - Update `clearSelection()`:
+>   - keep existing selection and move-dropdown reset behavior.
+>   - also call `clearMarkdownPreview()`.
+>
+> ## Template Changes
+>
+> - Replace the current static preview placeholder with conditional preview states:
+>   ```vue
+>   <section class="preview-panel">
+>     <h2>Preview</h2>
+>
+>     <p v-if="previewPending">Loading preview...</p>
+>     <p v-else-if="previewError">{{ previewError }}</p>
+>
+>     <article v-else-if="markdownPreview" class="preview-document">
+>       <h3>{{ markdownPreview.name }}</h3>
+>       <pre class="preview-content">{{ markdownPreview.content }}</pre>
+>     </article>
+>
+>     <p v-else>Select a Markdown file to preview its contents here.</p>
+>   </section>
+>   ```
+>
+> - Keep raw Markdown rendering in `<pre>` for now; do not add a Markdown-to-HTML dependency yet.
+>
+> ## CSS Changes
+>
+> - Add light preview styling only:
+>   - `.preview-document`
+>   - `.preview-content`
+> - Preserve the existing tree layout, selected-row styling, and move controls.
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually check:
+>   - clicking a file loads its Markdown content.
+>   - clicking a folder clears the preview.
+>   - clicking empty tree panel clears the preview.
+>   - clicking files quickly does not show stale content from the earlier click.
+>   - preview errors display if the API fails.
+>
+> ## Assumptions
+>
+> - `server/api/markdown.get.ts` already exists and returns `{ id, name, content }`.
+> - The endpoint uses the query-param route: `/api/markdown?fileId=<node-id>`.
+> - Preview is raw Markdown text for this MVP stage.
+>
+> Plan implementation
+>
+> Status: completed
+> # Plan: Add Markdown Preview Behavior To `app.vue`
+>
+> ## Summary
+>
+> Edit only `app/app.vue` so clicking a file node loads Markdown text from `GET /api/markdown?fileId=<node-id>` into the preview panel. Clicking a folder or empty tree-panel space clears the preview.
+>
+> ## Key Changes
+>
+> - Add preview response type:
+>   ```ts
+>   type MarkdownPreview = {
+>     id: string
+>     name: string
+>     content: string
+>   }
+>   ```
+>
+> - Add preview state near the existing selection state:
+>   ```ts
+>   const markdownPreview = ref<MarkdownPreview | null>(null)
+>   const previewPending = ref(false)
+>   const previewError = ref<string | null>(null)
+>   ```
+>
+> - Add two commented helpers:
+>   ```ts
+>   function clearMarkdownPreview(): void
+>   async function loadMarkdownPreview(fileId: string): Promise<void>
+>   ```
+>   `loadMarkdownPreview()` will call:
+>   ```ts
+>   $fetch<MarkdownPreview>('/api/markdown', {
+>     query: { fileId }
+>   })
+>   ```
+>
+> - Add a small race guard in `loadMarkdownPreview()`:
+>   - if the user clicks file A, then quickly clicks file B or a folder, only apply the response if `selectedNodeId.value === fileId` and `selectedNodeType.value === 'file'`.
+>   - use the same guard before setting `previewError` or clearing `previewPending`.
+>
+> - Update `selectNode(node)`:
+>   - keep the current selection and move-dropdown behavior.
+>   - if `node.type === 'file'`, call `loadMarkdownPreview(node.id)`.
+>   - otherwise call `clearMarkdownPreview()`.
+>
+> - Update `clearSelection()`:
+>   - keep existing selection and move-dropdown reset behavior.
+>   - also call `clearMarkdownPreview()`.
+>
+> ## Template Changes
+>
+> - Replace the current static preview placeholder with conditional preview states:
+>   ```vue
+>   <section class="preview-panel">
+>     <h2>Preview</h2>
+>
+>     <p v-if="previewPending">Loading preview...</p>
+>     <p v-else-if="previewError">{{ previewError }}</p>
+>
+>     <article v-else-if="markdownPreview" class="preview-document">
+>       <h3>{{ markdownPreview.name }}</h3>
+>       <pre class="preview-content">{{ markdownPreview.content }}</pre>
+>     </article>
+>
+>     <p v-else>Select a Markdown file to preview its contents here.</p>
+>   </section>
+>   ```
+>
+> - Keep raw Markdown rendering in `<pre>` for now; do not add a Markdown-to-HTML dependency yet.
+>
+> ## CSS Changes
+>
+> - Add light preview styling only:
+>   - `.preview-document`
+>   - `.preview-content`
+> - Preserve the existing tree layout, selected-row styling, and move controls.
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually check:
+>   - clicking a file loads its Markdown content.
+>   - clicking a folder clears the preview.
+>   - clicking empty tree panel clears the preview.
+>   - clicking files quickly does not show stale content from the earlier click.
+>   - preview errors display if the API fails.
+>
+> ## Assumptions
+>
+> - `server/api/markdown.get.ts` already exists and returns `{ id, name, content }`.
+> - The endpoint uses the query-param route: `/api/markdown?fileId=<node-id>`.
+> - Preview is raw Markdown text for this MVP stage.
+</details>
+
+> PLEASE IMPLEMENT THIS PLAN:
+> # Plan: Add Markdown Preview Behavior To `app.vue`
+>
+> ## Summary
+>
+> Edit only `app/app.vue` so clicking a file node loads Markdown text from `GET /api/markdown?fileId=<node-id>` into the preview panel. Clicking a folder or empty tree-panel space clears the preview.
+>
+> ## Key Changes
+>
+> - Add preview response type:
+>   ```ts
+>   type MarkdownPreview = {
+>     id: string
+>     name: string
+>     content: string
+>   }
+>   ```
+>
+> - Add preview state near the existing selection state:
+>   ```ts
+>   const markdownPreview = ref<MarkdownPreview | null>(null)
+>   const previewPending = ref(false)
+>   const previewError = ref<string | null>(null)
+>   ```
+>
+> - Add two commented helpers:
+>   ```ts
+>   function clearMarkdownPreview(): void
+>   async function loadMarkdownPreview(fileId: string): Promise<void>
+>   ```
+>   `loadMarkdownPreview()` will call:
+>   ```ts
+>   $fetch<MarkdownPreview>('/api/markdown', {
+>     query: { fileId }
+>   })
+>   ```
+>
+> - Add a small race guard in `loadMarkdownPreview()`:
+>   - if the user clicks file A, then quickly clicks file B or a folder, only apply the response if `selectedNodeId.value === fileId` and `selectedNodeType.value === 'file'`.
+>   - use the same guard before setting `previewError` or clearing `previewPending`.
+>
+> - Update `selectNode(node)`:
+>   - keep the current selection and move-dropdown behavior.
+>   - if `node.type === 'file'`, call `loadMarkdownPreview(node.id)`.
+>   - otherwise call `clearMarkdownPreview()`.
+>
+> - Update `clearSelection()`:
+>   - keep existing selection and move-dropdown reset behavior.
+>   - also call `clearMarkdownPreview()`.
+>
+> ## Template Changes
+>
+> - Replace the current static preview placeholder with conditional preview states:
+>   ```vue
+>   <section class="preview-panel">
+>     <h2>Preview</h2>
+>
+>     <p v-if="previewPending">Loading preview...</p>
+>     <p v-else-if="previewError">{{ previewError }}</p>
+>
+>     <article v-else-if="markdownPreview" class="preview-document">
+>       <h3>{{ markdownPreview.name }}</h3>
+>       <pre class="preview-content">{{ markdownPreview.content }}</pre>
+>     </article>
+>
+>     <p v-else>Select a Markdown file to preview its contents here.</p>
+>   </section>
+>   ```
+>
+> - Keep raw Markdown rendering in `<pre>` for now; do not add a Markdown-to-HTML dependency yet.
+>
+> ## CSS Changes
+>
+> - Add light preview styling only:
+>   - `.preview-document`
+>   - `.preview-content`
+> - Preserve the existing tree layout, selected-row styling, and move controls.
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually check:
+>   - clicking a file loads its Markdown content.
+>   - clicking a folder clears the preview.
+>   - clicking empty tree panel clears the preview.
+>   - clicking files quickly does not show stale content from the earlier click.
+>   - preview errors display if the API fails.
+>
+> ## Assumptions
+>
+> - `server/api/markdown.get.ts` already exists and returns `{ id, name, content }`.
+> - The endpoint uses the query-param route: `/api/markdown?fileId=<node-id>`.
+> - Preview is raw Markdown text for this MVP stage.
+
+<details><summary>10 previous messages</summary>
+
+> I’ll implement only the `app/app.vue` preview behavior from the plan. I’m doing the repo-required read pass first, then I’ll patch the Vue file and run the Nuxt build.
+>
+> <details><summary>Ran 6 commands</summary>
+>
+> - Ran `Get-Content -LiteralPath 'internship-file-explorer-take-home-task.md'`
+> - Ran `Get-Content -LiteralPath 'specs/spec-file-explorer.md'`
+> - Ran `Get-Content -LiteralPath 'AI_USAGE.md'`
+> - Ran `Get-Content -LiteralPath 'app/app.vue'`
+> - Ran `Get-Content -LiteralPath 'README.md'`
+> - Ran `Get-Content -LiteralPath 'server/api/markdown.get.ts'`
+>
+> </details>
+>
+> I’m going to patch the preview state and handlers into the existing selection flow. The only behavioral change is that file selection now starts an async preview load, while folder/background selection clears it.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+99 -2)
+>
+> </details>
+>
+> The patch is in. I’m reading `app.vue` back now to check the state flow and make sure the preview conditionals landed cleanly before building.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `Get-Content -LiteralPath 'app/app.vue'`
+>
+> </details>
+>
+> The preview flow looks coherent: `selectNode()` now routes file vs folder behavior, and `clearSelection()` clears preview too. I’m running the Nuxt build now to catch TypeScript/template issues.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `npm.cmd run build`
+>
+> </details>
+>
+> Build passed. I’ll do one final diff check so the summary can be precise and we can spot any accidental changes outside the intended preview behavior.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `git diff -- app/app.vue`
+>
+> </details>
+</details>
+
+Implemented the Markdown preview behavior in [app.vue](<./app/app.vue>).
+
+It now:
+- loads `/api/markdown?fileId=<node-id>` when a file node is clicked
+- clears the preview when a folder or empty tree-panel area is clicked
+- tracks preview loading/error/content state separately from tree loading
+- guards against stale async responses if the user clicks between files quickly
+- renders raw Markdown in a styled `<pre>` block for now
+
+Verification: `npm.cmd run build` passed. Nuxt still shows the same sourcemap/deprecation warnings, but the app compiled successfully.
+
+> "guards against stale async responses if the user clicks between files quickly" I am planning to rewirte the `Preview markdown file` user flow in [spec-file-explorer.md](specs/spec-file-explorer.md) -- elaborate on what this race condition again pls
+
+The race condition is about **request order vs response order**.
+
+Suppose preview loading is async:
+
+```text
+click File A
+  -> frontend sends GET /api/markdown?fileId=A
+
+quickly click File B
+  -> frontend sends GET /api/markdown?fileId=B
+```
+
+You might expect File B to show, because B is the latest selected file. But network/server timing can finish in a different order:
+
+```text
+request B finishes first
+  -> preview shows File B
+
+request A finishes later
+  -> without a guard, preview gets overwritten with File A
+```
+
+Now the UI is inconsistent:
+
+```text
+selected row: File B
+preview panel: File A
+```
+
+That is the stale async response problem.
+
+The guard we added says: before applying the API response, check whether the user is **still selecting the same file** that started the request:
+
+```ts
+if (selectedNodeId.value === fileId && selectedNodeType.value === 'file') {
+  markdownPreview.value = preview
+}
+```
+
+So if File A’s response comes back after the user has already selected File B, the app ignores File A’s stale response.
+
+A good spec wording could be:
+
+```text
+When loading Markdown preview content, the frontend should only display the response if the selected node still matches the requested file id. This prevents slower responses from earlier file selections from overwriting the preview for the currently selected file.
+```
+
+Same idea applies to errors and loading state too: an old failed request should not show an error after the user has already selected a different file.
+
+<details><summary>1 previous message</summary>
+
+> Context compaction
+>
+> Source: manual
+> Status: completed
+</details>
+
+> Alright. Just for an overview of database persistence, looking at [server](d:/other-projects/take home software dev task/server/) and [app.vue](d:/other-projects/take home software dev task/app/app.vue) , I suppose we just need to implement a database equivalent [db.ts](server/utils/db.ts) of [node-store.ts](server/utils/node-store.ts), and that the only thing we need to change (at a high level, at least) is that
+>
+> [node-store.ts](server/utils/node-store.ts)
+> ```
+> let nodes: ExplorerNode[] | null = null
+>
+> /**
+>  * Initializes the in-memory node store once.
+>  *
+>  * This is acting like a temporary database table:
+>  * - first request seeds nodes from files/
+>  * - later requests reuse the same array
+>  * - server restart resets everything
+>  */
+> function _ensureNodesInitialized(): void {
+>
+>   if (nodes !== null) {
+>     return
+>   }
+>
+>   const fileNames = readMarkdownFileNames('files')
+>   nodes = organizeInitialFiles(fileNames)
+> }
+> ```
+> so here `nodes` can be like reading the database in memory and ` (nodes !== null)` this check is like whether the database is not empty, and implement the INSERT INTO equivalent of `createFolder` and UPDATE equivalent of `updateNodeParent`
+>
+> From [server](server/) , [api](server/api/) , and the app [app.vue](app/app.vue) , let us brainstorm extensively before thinking about database persistence. Moreover , I am also thinking whether having "two versions of the app": in memory vs database persistence is feasible or not, or should we eventually overwrite [node-store.ts](server/utils/node-store.ts) with [db.ts](server/utils/db.ts) . Or I think for the in memory version we can stop here, and create a new git branch where we overwrite [node-store.ts](server/utils/node-store.ts) with [db.ts](server/utils/db.ts) .
+
+<details><summary>4 previous messages</summary>
+
+> I’ll stay read-only and ground this in the current app shape. I’m going to inspect the server/API files and `app.vue` so the persistence discussion maps to what you actually have, not an imaginary Nuxt app.
+>
+> <details><summary>Ran 8 commands</summary>
+>
+> - Ran `Get-Content -Path server\api\move.post.ts`
+> - Ran `Get-Content -Path app\app.vue`
+> - Ran `Get-Content -Path server\api\folders.post.ts`
+> - Ran `Get-Content -Path server\utils\tree.ts`
+> - Ran `Get-Content -Path server\utils\node-store.ts`
+> - Ran `Get-Content -Path server\api\markdown.get.ts`
+> - Ran `Get-ChildItem -Path server -Recurse -File | Select-Object -ExpandProperty FullName`
+> - Ran `Get-Content -Path server\api\tree.get.ts`
+>
+> </details>
+>
+> One interesting detail: there is already a `server/utils/db.ts` file in the tree. I’ll read that too before giving the architecture answer, because it affects whether we’re talking about “create a new file” or “fill in an existing placeholder.”
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `Get-Content -Path server\utils\db.ts`
+>
+> </details>
+</details>
+
+Yes, your mental model is basically right. The current `node-store.ts` is acting like a tiny fake database table held inside the Node/Nuxt server runtime.
+
+One important refinement: this part:
+
+```ts
+if (nodes !== null) {
+  return
+}
+```
+
+is not quite “database is not empty.” It means “this server process has already initialized its in-memory array.” With SQLite, the equivalent would be two separate ideas:
+
+```ts
+ensureDatabase()
+  -> create the database/table if they do not exist
+
+seedDatabaseIfEmpty()
+  -> check SELECT COUNT(*) FROM nodes
+  -> if count is 0, read files/ and INSERT initial nodes
+```
+
+Then the database-backed equivalents map very cleanly:
+
+```ts
+node-store.ts today              db.ts later
+
+loadNodes()                      SELECT * FROM nodes ORDER BY ...
+insertFolder(parentId, name)     INSERT INTO nodes (...)
+updateNodeParent(id, parentId)   UPDATE nodes SET parent_id = ...
+```
+
+The nice thing is that `app.vue` should barely care. Right now the frontend calls:
+
+- `GET /api/tree`
+- `POST /api/folders`
+- `POST /api/move`
+- `GET /api/markdown?fileId=...`
+
+If those API routes still return the same shapes, the frontend does not need to know whether the server is using memory or SQLite. That is exactly the separation we want.
+
+For implementation strategy, I would avoid “two versions of the app” long-term. Better options:
+
+1. Keep the current in-memory version as a committed Stage 3 checkpoint.
+2. Create a new branch like `feature/sqlite-persistence`.
+3. Add/fill `server/utils/db.ts`.
+4. Change the API routes to import from the database-backed functions instead of `node-store.ts`.
+
+Even better, you can keep the same function names:
+
+```ts
+loadNodes()
+insertFolder(parentId, name)
+updateNodeParent(nodeId, newParentId)
+```
+
+That way `tree.get.ts`, `folders.post.ts`, `move.post.ts`, and `markdown.get.ts` only need import changes, or possibly no changes if `node-store.ts` becomes a facade over SQLite.
+
+For learning and safety, I like this shape:
+
+```text
+server/utils/tree.ts
+  Pure logic:
+  - buildTree
+  - organizeInitialFiles
+  - createFolder
+  - moveNode
+
+server/utils/node-store.ts
+  Temporary in-memory storage:
+  - loadNodes
+  - insertFolder
+  - updateNodeParent
+
+server/utils/db.ts
+  SQLite-backed storage:
+  - ensureDatabase
+  - seedDatabaseIfEmpty
+  - loadNodes
+  - insertFolder
+  - updateNodeParent
+```
+
+A very practical SQLite implementation can still reuse your pure functions. For example, `insertFolder()` in `db.ts` can:
+
+1. `loadNodes()` from SQLite.
+2. Call pure `createFolder(nodes, parentId, name)` for validation/id/sort logic.
+3. Find the newly created folder.
+4. `INSERT` only that new folder row.
+
+And `updateNodeParent()` can:
+
+1. `loadNodes()` from SQLite.
+2. Call pure `moveNode(nodes, nodeId, newParentId)` for validation, including descendant checks.
+3. Find the updated node.
+4. Run `UPDATE nodes SET parent_id = ?, sort_order = ? WHERE id = ?`.
+
+That lets your existing algorithmic work keep paying rent. SQLite becomes the persistence mechanism, not a rewrite of all your tree logic.
+
+The database file does need to live somewhere, for example:
+
+```text
+data/file-explorer.sqlite
+```
+
+or
+
+```text
+.sqlite/file-explorer.db
+```
+
+Usually that generated DB file should be gitignored, because reviewers can recreate it by running the app and seeding from `files/`. The source Markdown files and code are committed; the local persisted app state is not.
+
+So my recommendation: stop the in-memory version here as a working Stage 3 milestone, commit it, then create a new branch for Stage 4. Do not fork the UI. Keep the API contract stable, replace the storage layer underneath it. That is the cleanest “same app, stronger backend” path.
+
+> What do you mean by forking the UI?
+
+By “forking the UI,” I mean creating two separate frontend versions of the app, for example:
+
+```text
+app-in-memory.vue
+app-sqlite.vue
+```
+
+or having separate UI flows like:
+
+```text
+In-memory mode:
+  click folder -> call /api/folders-memory
+
+SQLite mode:
+  click folder -> call /api/folders-db
+```
+
+That would make the project harder to reason about because you would have two frontends that need to stay in sync.
+
+What I’m recommending instead is:
+
+```text
+app.vue
+  calls the same API routes:
+  - GET /api/tree
+  - POST /api/folders
+  - POST /api/move
+  - GET /api/markdown
+```
+
+Then only the backend storage layer changes:
+
+```text
+Current:
+app.vue -> server/api/* -> node-store.ts -> in-memory array
+
+Later:
+app.vue -> server/api/* -> db.ts -> SQLite
+```
+
+So the UI does not fork. It stays one app. We just replace the storage engine underneath the existing API routes.
+
+> ```
+> A very practical SQLite implementation can still reuse your pure functions. For example, insertFolder() in db.ts can:
+> loadNodes() from SQLite.
+> Call pure createFolder(nodes, parentId, name) for validation/id/sort logic.
+> Find the newly created folder.
+> INSERT only that new folder row.
+> And updateNodeParent() can:
+> loadNodes() from SQLite.
+> Call pure moveNode(nodes, nodeId, newParentId) for validation, including descendant checks.
+> Find the updated node.
+> Run UPDATE nodes SET parent_id = ?, sort_order = ? WHERE id = ?.
+> That lets your existing algorithmic work keep paying rent. SQLite becomes the persistence mechanism, not a rewrite of all your tree logic.
+> ```
+>
+> Yes I agree with this. So I suppose now we create a db variant of [node-store.ts](server/utils/node-store.ts) in [db.ts](server/utils/db.ts) with additional `ensureDatabase` and `seedDatabaseIfEmpty` functions. I was thinking maybe to modify the api endpoints but preserve the logic, for example the database equivalent of `tree.get.ts` would look like
+> ```
+> import { buildTree } from '../utils/tree'
+> import { loadNodes } from '../utils/db'
+>
+> /**
+>  * GET /api/tree
+>  *
+>  * Loads the current flat nodes from the temporary in-memory store,
+>  * converts them into a nested tree, and returns that tree to the UI.
+>  */
+> export default defineEventHandler(() => {
+>   const nodes = loadNodes()
+>
+>   return buildTree(nodes)
+> })
+> ```
+> and possibly all the other api routes as well?
+
+Yes, exactly. The API routes can stay almost identical. The main change is swapping the storage import:
+
+```ts
+// before
+import { loadNodes } from '../utils/node-store'
+
+// after
+import { loadNodes } from '../utils/db'
+```
+
+Same idea for mutations:
+
+```ts
+// folders.post.ts
+import { insertFolder } from '../utils/db'
+
+// move.post.ts
+import { updateNodeParent } from '../utils/db'
+
+// markdown.get.ts
+import { loadNodes } from '../utils/db'
+```
+
+So at the API level:
+
+```text
+tree.get.ts
+  loadNodes()
+  buildTree(nodes)
+  return tree
+
+folders.post.ts
+  insertFolder(parentId, name)
+  buildTree(updatedNodes)
+  return tree
+
+move.post.ts
+  updateNodeParent(nodeId, newParentId)
+  buildTree(updatedNodes)
+  return tree
+
+markdown.get.ts
+  loadNodes()
+  find file node
+  read filePath
+  return Markdown content
+```
+
+That logic does not need to change much.
+
+The bigger change is inside `db.ts`, where `node-store.ts`’s module-level variable:
+
+```ts
+let nodes: ExplorerNode[] | null = null
+```
+
+gets replaced by an actual SQLite database file/table.
+
+Conceptually:
+
+```ts
+ensureDatabase()
+  create database directory if needed
+  create nodes table if needed
+
+seedDatabaseIfEmpty()
+  ensureDatabase()
+  SELECT COUNT(*) FROM nodes
+  if count === 0:
+    readMarkdownFileNames('files')
+    organizeInitialFiles(fileNames)
+    INSERT all initial nodes
+
+loadNodes()
+  seedDatabaseIfEmpty()
+  SELECT rows from nodes
+  convert DB snake_case columns to ExplorerNode camelCase fields
+
+insertFolder(parentId, name)
+  seedDatabaseIfEmpty()
+  const nodes = loadNodes()
+  const updatedNodes = createFolder(nodes, parentId, name)
+  const folder = the new node from updatedNodes
+  INSERT folder into nodes
+  return loadNodes()
+
+updateNodeParent(nodeId, newParentId)
+  seedDatabaseIfEmpty()
+  const nodes = loadNodes()
+  const updatedNodes = moveNode(nodes, nodeId, newParentId)
+  const movedNode = updatedNodes.find(...)
+  UPDATE nodes SET parent_id = ?, sort_order = ? WHERE id = ?
+  return loadNodes()
+```
+
+The app flow becomes:
+
+```text
+app.vue
+  -> calls same API routes
+
+server/api/*
+  -> same route behavior
+  -> imports from db.ts instead of node-store.ts
+
+server/utils/db.ts
+  -> owns persistence
+  -> uses pure tree.ts functions for rules/validation
+
+server/utils/tree.ts
+  -> stays mostly pure
+  -> no SQLite knowledge
+```
+
+I would slightly adjust the route comments when switching over. For example, this would no longer be accurate:
+
+```ts
+Loads the current flat nodes from the temporary in-memory store
+```
+
+It should become something like:
+
+```ts
+Loads the current flat nodes from SQLite, converts them into a nested tree,
+and returns that tree to the UI.
+```
+
+So yes: implement `db.ts`, then update the imports in all four API routes, plus their comments. `app.vue` should not need to change.
+
+> Alright the biggest heavy lifting needed is implementing [db.ts](server/utils/db.ts) so lets do that first. Stay on plan mode for now.
+
+<details><summary>6 previous messages</summary>
+
+> I’ll keep this in planning territory and first pin down the local constraints that matter for SQLite: current Node/Nuxt setup, whether a SQLite package already exists, and the exact storage contract `db.ts` needs to match.
+>
+> <details><summary>Ran 8 commands</summary>
+>
+> - Ran `Get-Content -Path tsconfig.json`
+> - Ran `Get-Content -Path server\utils\node-store.ts`
+> - Ran `Get-Content -Path specs\spec-file-explorer.md`
+> - Ran `Get-Content -Path server\utils\db.ts`
+> - Ran `Get-Content -Path server\utils\tree.ts`
+> - Ran `node --version`
+> - Ran `Get-Content -Path .gitignore`
+> - Ran `Get-Content -Path package.json`
+>
+> </details>
+>
+> The repo is already set up nicely for the swap: `db.ts` exists but is empty, `data/` is already gitignored, and local Node is `v24.18.0`, so the built-in `node:sqlite` path is viable without adding a dependency. I’m going to sanity-check the import shape before locking the plan.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `node -e "import('node:sqlite').then((m)=>console.log(Object.keys(m).join(',')))"`
+>
+> </details>
+>
+> Plan
+>
+> # Implement SQLite `db.ts`
+>
+> ## Summary
+>
+> Implement `server/utils/db.ts` as the Stage 4 storage layer equivalent of `node-store.ts`. It will use Node’s built-in `node:sqlite` with `DatabaseSync`, store the database under the already-gitignored `data/` directory, seed from `files/` only when empty, and expose the same storage-shaped functions as the current in-memory store.
+>
+> ## Key Changes
+>
+> - In `server/utils/db.ts`, add SQLite-backed exports:
+>   ```ts
+>   ensureDatabase(): void
+>   seedDatabaseIfEmpty(): void
+>   loadNodes(): ExplorerNode[]
+>   insertFolder(parentId: string | null, name: string): ExplorerNode[]
+>   updateNodeParent(nodeId: string, newParentId: string | null): ExplorerNode[]
+>   ```
+>
+> - Use this SQLite schema:
+>   ```sql
+>   CREATE TABLE IF NOT EXISTS nodes (
+>     id TEXT PRIMARY KEY,
+>     type TEXT NOT NULL CHECK (type IN ('folder', 'file')),
+>     name TEXT NOT NULL,
+>     parent_id TEXT,
+>     file_path TEXT,
+>     sort_order INTEGER NOT NULL,
+>     FOREIGN KEY (parent_id) REFERENCES nodes(id)
+>   )
+>   ```
+>
+> - Add small internal helpers, prefixed with `_`:
+>   ```ts
+>   _getDatabase(): DatabaseSync
+>   _mapRowToExplorerNode(row): ExplorerNode
+>   _insertNode(node: ExplorerNode): void
+>   _findNewNode(beforeNodes, afterNodes): ExplorerNode
+>   ```
+>
+> - Reuse existing pure logic from `tree.ts`:
+>   - `readMarkdownFileNames('files')`
+>   - `organizeInitialFiles(fileNames)`
+>   - `createFolder(nodes, parentId, name)`
+>   - `moveNode(nodes, nodeId, newParentId)`
+>
+> - Implement behavior:
+>   - `ensureDatabase()` creates `data/` and the `nodes` table.
+>   - `seedDatabaseIfEmpty()` checks `COUNT(*)`; if zero, inserts the deterministic initial hierarchy.
+>   - `loadNodes()` calls `seedDatabaseIfEmpty()`, reads all rows, maps `parent_id` to `parentId` and `file_path` to `filePath`.
+>   - `insertFolder()` loads current rows, calls pure `createFolder(...)`, inserts only the newly created folder row, then returns `loadNodes()`.
+>   - `updateNodeParent()` loads current rows, calls pure `moveNode(...)` for validation and sort order, updates only the moved row, then returns `loadNodes()`.
+>
+> ## Important Boundary
+>
+> This step edits only `server/utils/db.ts`.
+>
+> The API route import swap happens after this is implemented and verified:
+>
+> ```ts
+> // later
+> import { loadNodes } from '../utils/db'
+> import { insertFolder } from '../utils/db'
+> import { updateNodeParent } from '../utils/db'
+> ```
+>
+> Keeping this first step isolated makes it easier to confirm the DB layer compiles before changing app behavior.
+>
+> ## Verification
+>
+> - Run:
+>   ```powershell
+>   npm.cmd run build
+>   ```
+> - Optionally run a small read-only smoke after implementation by importing the DB functions through the Nuxt build context or a temporary command if needed, but do not create extra repo files.
+> - Confirm:
+>   - `data/` is used for the SQLite file and remains ignored.
+>   - `loadNodes()` returns seeded rows on an empty DB.
+>   - repeated `loadNodes()` calls do not duplicate seed rows.
+>   - `insertFolder(null, 'Example')` persists a root folder.
+>   - `updateNodeParent(nodeId, newParentId)` persists parent changes.
+>   - original Markdown files in `files/` are not moved or rewritten.
+>
+> ## Assumptions
+>
+> - Use built-in `node:sqlite` because local Node is `v24.18.0` and no SQLite dependency is currently installed.
+> - Use synchronous SQLite APIs because the app is local MVP-scale and the code stays close to the current synchronous in-memory/store logic.
+> - Store the database at `data/file-explorer.sqlite`.
+> - Keep `node-store.ts` for now as the Stage 3 reference until the API routes are deliberately switched to `db.ts`.
+>
+> Plan implementation
+>
+> Status: completed
+> # Implement SQLite `db.ts`
+>
+> ## Summary
+>
+> Implement `server/utils/db.ts` as the Stage 4 storage layer equivalent of `node-store.ts`. It will use Node’s built-in `node:sqlite` with `DatabaseSync`, store the database under the already-gitignored `data/` directory, seed from `files/` only when empty, and expose the same storage-shaped functions as the current in-memory store.
+>
+> ## Key Changes
+>
+> - In `server/utils/db.ts`, add SQLite-backed exports:
+>   ```ts
+>   ensureDatabase(): void
+>   seedDatabaseIfEmpty(): void
+>   loadNodes(): ExplorerNode[]
+>   insertFolder(parentId: string | null, name: string): ExplorerNode[]
+>   updateNodeParent(nodeId: string, newParentId: string | null): ExplorerNode[]
+>   ```
+>
+> - Use this SQLite schema:
+>   ```sql
+>   CREATE TABLE IF NOT EXISTS nodes (
+>     id TEXT PRIMARY KEY,
+>     type TEXT NOT NULL CHECK (type IN ('folder', 'file')),
+>     name TEXT NOT NULL,
+>     parent_id TEXT,
+>     file_path TEXT,
+>     sort_order INTEGER NOT NULL,
+>     FOREIGN KEY (parent_id) REFERENCES nodes(id)
+>   )
+>   ```
+>
+> - Add small internal helpers, prefixed with `_`:
+>   ```ts
+>   _getDatabase(): DatabaseSync
+>   _mapRowToExplorerNode(row): ExplorerNode
+>   _insertNode(node: ExplorerNode): void
+>   _findNewNode(beforeNodes, afterNodes): ExplorerNode
+>   ```
+>
+> - Reuse existing pure logic from `tree.ts`:
+>   - `readMarkdownFileNames('files')`
+>   - `organizeInitialFiles(fileNames)`
+>   - `createFolder(nodes, parentId, name)`
+>   - `moveNode(nodes, nodeId, newParentId)`
+>
+> - Implement behavior:
+>   - `ensureDatabase()` creates `data/` and the `nodes` table.
+>   - `seedDatabaseIfEmpty()` checks `COUNT(*)`; if zero, inserts the deterministic initial hierarchy.
+>   - `loadNodes()` calls `seedDatabaseIfEmpty()`, reads all rows, maps `parent_id` to `parentId` and `file_path` to `filePath`.
+>   - `insertFolder()` loads current rows, calls pure `createFolder(...)`, inserts only the newly created folder row, then returns `loadNodes()`.
+>   - `updateNodeParent()` loads current rows, calls pure `moveNode(...)` for validation and sort order, updates only the moved row, then returns `loadNodes()`.
+>
+> ## Important Boundary
+>
+> This step edits only `server/utils/db.ts`.
+>
+> The API route import swap happens after this is implemented and verified:
+>
+> ```ts
+> // later
+> import { loadNodes } from '../utils/db'
+> import { insertFolder } from '../utils/db'
+> import { updateNodeParent } from '../utils/db'
+> ```
+>
+> Keeping this first step isolated makes it easier to confirm the DB layer compiles before changing app behavior.
+>
+> ## Verification
+>
+> - Run:
+>   ```powershell
+>   npm.cmd run build
+>   ```
+> - Optionally run a small read-only smoke after implementation by importing the DB functions through the Nuxt build context or a temporary command if needed, but do not create extra repo files.
+> - Confirm:
+>   - `data/` is used for the SQLite file and remains ignored.
+>   - `loadNodes()` returns seeded rows on an empty DB.
+>   - repeated `loadNodes()` calls do not duplicate seed rows.
+>   - `insertFolder(null, 'Example')` persists a root folder.
+>   - `updateNodeParent(nodeId, newParentId)` persists parent changes.
+>   - original Markdown files in `files/` are not moved or rewritten.
+>
+> ## Assumptions
+>
+> - Use built-in `node:sqlite` because local Node is `v24.18.0` and no SQLite dependency is currently installed.
+> - Use synchronous SQLite APIs because the app is local MVP-scale and the code stays close to the current synchronous in-memory/store logic.
+> - Store the database at `data/file-explorer.sqlite`.
+> - Keep `node-store.ts` for now as the Stage 3 reference until the API routes are deliberately switched to `db.ts`.
+</details>
+
+> PLEASE IMPLEMENT THIS PLAN:
+> # Implement SQLite `db.ts`
+>
+> ## Summary
+>
+> Implement `server/utils/db.ts` as the Stage 4 storage layer equivalent of `node-store.ts`. It will use Node’s built-in `node:sqlite` with `DatabaseSync`, store the database under the already-gitignored `data/` directory, seed from `files/` only when empty, and expose the same storage-shaped functions as the current in-memory store.
+>
+> ## Key Changes
+>
+> - In `server/utils/db.ts`, add SQLite-backed exports:
+>   ```ts
+>   ensureDatabase(): void
+>   seedDatabaseIfEmpty(): void
+>   loadNodes(): ExplorerNode[]
+>   insertFolder(parentId: string | null, name: string): ExplorerNode[]
+>   updateNodeParent(nodeId: string, newParentId: string | null): ExplorerNode[]
+>   ```
+>
+> - Use this SQLite schema:
+>   ```sql
+>   CREATE TABLE IF NOT EXISTS nodes (
+>     id TEXT PRIMARY KEY,
+>     type TEXT NOT NULL CHECK (type IN ('folder', 'file')),
+>     name TEXT NOT NULL,
+>     parent_id TEXT,
+>     file_path TEXT,
+>     sort_order INTEGER NOT NULL,
+>     FOREIGN KEY (parent_id) REFERENCES nodes(id)
+>   )
+>   ```
+>
+> - Add small internal helpers, prefixed with `_`:
+>   ```ts
+>   _getDatabase(): DatabaseSync
+>   _mapRowToExplorerNode(row): ExplorerNode
+>   _insertNode(node: ExplorerNode): void
+>   _findNewNode(beforeNodes, afterNodes): ExplorerNode
+>   ```
+>
+> - Reuse existing pure logic from `tree.ts`:
+>   - `readMarkdownFileNames('files')`
+>   - `organizeInitialFiles(fileNames)`
+>   - `createFolder(nodes, parentId, name)`
+>   - `moveNode(nodes, nodeId, newParentId)`
+>
+> - Implement behavior:
+>   - `ensureDatabase()` creates `data/` and the `nodes` table.
+>   - `seedDatabaseIfEmpty()` checks `COUNT(*)`; if zero, inserts the deterministic initial hierarchy.
+>   - `loadNodes()` calls `seedDatabaseIfEmpty()`, reads all rows, maps `parent_id` to `parentId` and `file_path` to `filePath`.
+>   - `insertFolder()` loads current rows, calls pure `createFolder(...)`, inserts only the newly created folder row, then returns `loadNodes()`.
+>   - `updateNodeParent()` loads current rows, calls pure `moveNode(...)` for validation and sort order, updates only the moved row, then returns `loadNodes()`.
+>
+> ## Important Boundary
+>
+> This step edits only `server/utils/db.ts`.
+>
+> The API route import swap happens after this is implemented and verified:
+>
+> ```ts
+> // later
+> import { loadNodes } from '../utils/db'
+> import { insertFolder } from '../utils/db'
+> import { updateNodeParent } from '../utils/db'
+> ```
+>
+> Keeping this first step isolated makes it easier to confirm the DB layer compiles before changing app behavior.
+>
+> ## Verification
+>
+> - Run:
+>   ```powershell
+>   npm.cmd run build
+>   ```
+> - Optionally run a small read-only smoke after implementation by importing the DB functions through the Nuxt build context or a temporary command if needed, but do not create extra repo files.
+> - Confirm:
+>   - `data/` is used for the SQLite file and remains ignored.
+>   - `loadNodes()` returns seeded rows on an empty DB.
+>   - repeated `loadNodes()` calls do not duplicate seed rows.
+>   - `insertFolder(null, 'Example')` persists a root folder.
+>   - `updateNodeParent(nodeId, newParentId)` persists parent changes.
+>   - original Markdown files in `files/` are not moved or rewritten.
+>
+> ## Assumptions
+>
+> - Use built-in `node:sqlite` because local Node is `v24.18.0` and no SQLite dependency is currently installed.
+> - Use synchronous SQLite APIs because the app is local MVP-scale and the code stays close to the current synchronous in-memory/store logic.
+> - Store the database at `data/file-explorer.sqlite`.
+> - Keep `node-store.ts` for now as the Stage 3 reference until the API routes are deliberately switched to `db.ts`.
+
+<details><summary>13 previous messages</summary>
+
+> I’ll implement only `server/utils/db.ts` as planned and keep the API routes untouched. First I’m doing the required quick read of the project-facing docs so this change stays aligned with the repo rules and spec.
+>
+> <details><summary>Ran 8 commands</summary>
+>
+> - Ran `Get-Content -Path specs\spec-file-explorer.md`
+> - Ran `Get-Content -Path server\utils\node-store.ts`
+> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
+> - Ran `Get-Content -Path server\utils\db.ts`
+> - Ran `Get-Content -Path server\utils\tree.ts`
+> - Ran `Get-Content -Path README.md`
+> - Ran `Get-Content -Path package.json`
+> - Ran `Get-Content -Path AI_USAGE.md`
+>
+> </details>
+>
+> I’ve got the shape now. The edit is self-contained: `db.ts` will own opening/creating the SQLite file, mapping snake_case rows to `ExplorerNode`, and delegating validation/id logic back to the pure functions in `tree.ts`.
+>
+> I’m about to write `server/utils/db.ts`. I’ll keep the comments/docstrings learner-friendly like the surrounding files, since this is the first real persistence layer in the project.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./server/utils/db.ts` (+219 -0)
+>
+> </details>
+>
+> `db.ts` is now populated. I’ll read it back once, then run the Nuxt build so we catch TypeScript/module issues before we talk about swapping the API imports.
+>
+> <details><summary>Ran 2 commands</summary>
+>
+> - Ran `npm.cmd run build`
+> - Ran `Get-Content -Path server\utils\db.ts`
+>
+> </details>
+>
+> Build passed, and it surfaced one useful Nuxt-specific wrinkle: because `node-store.ts` and `db.ts` now export the same function names, Nuxt’s auto-import scanner reports duplicate server utility exports. Explicit imports will still work, but we should keep that warning in mind for the route-swap step.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `node --experimental-strip-types -e "import('./server/utils/db.ts').then((m) => console.log(['ensureDatabase','seedDatabaseIfEmpty','loadNodes','insertFolder','updateNodeParent'].every((name) => typeof m[name] === 'function') ? 'db exports ok' : 'db exports missing'))"`
+>
+> </details>
+>
+> The quick raw-Node import check tripped over a Nuxt/TypeScript detail: raw Node does not resolve the extensionless `./tree` import in a `.ts` file the way Nuxt does. That’s not an app build failure; the actual `npm.cmd run build` passed. I’ll do one final diff read so I can summarize exactly what changed.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `git diff -- server\utils\db.ts`
+>
+> </details>
+>
+> The diff shows only `server/utils/db.ts` changed. One more quick status check will confirm I didn’t touch the API routes or docs while doing this first persistence-layer step.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `git status --short`
+>
+> </details>
+</details>
+
+Implemented `server/utils/db.ts` as the SQLite-backed storage layer.
+
+What changed in [db.ts](<./server/utils/db.ts>):
+- Uses Node’s built-in `node:sqlite` with `DatabaseSync`.
+- Stores the DB at `data/file-explorer.sqlite`.
+- Adds `ensureDatabase()`, `seedDatabaseIfEmpty()`, `loadNodes()`, `insertFolder()`, and `updateNodeParent()`.
+- Reuses `createFolder(...)` and `moveNode(...)` from `tree.ts` for validation/id/sort logic.
+- Maps SQLite snake_case fields back into `ExplorerNode` camelCase fields.
+
+Verification:
+- `npm.cmd run build` passed.
+- Build showed expected Nuxt warnings, plus new duplicate auto-import warnings because both `node-store.ts` and `db.ts` now export `loadNodes`, `insertFolder`, and `updateNodeParent`. Explicit imports will still work, but this is worth resolving when we switch the API routes.
+- I did not swap API routes yet, per the boundary. `app.vue` is unchanged.
+
+One note: `git status` also shows `ai-conversations/codex-chat.md` modified, but I did not touch it.
+
+> Hm I think we might need to install `node:sqlite` -- i have changed api imports in [api](server/api/) but was met with this error when running `npm run dev`
+> ```
+>  ERROR  Error: Transform failed with 1 error:                                                                                            nitro 2:08:10 PM
+> D:\other-projects\take home software dev task\server\api\folders.post.ts:3:41: ERROR: Unterminated string literal
+>
+> Unterminated string literal
+>
+>  WARN  "node:sqlite" is imported by "server/utils/db.ts", but could not be resolved – treating it as an external dependency.                   2:08:11 PM```
+
+<details><summary>2 previous messages</summary>
+
+> I’ll inspect the changed API files first. The `node:sqlite` warning and the `Unterminated string literal` are probably two different things: one is Nuxt/Nitro bundling noise around a Node built-in, while the hard failure is almost certainly a typo in `folders.post.ts`.
+>
+> <details><summary>Ran 6 commands</summary>
+>
+> - Ran `Get-Content -Path server\api\markdown.get.ts`
+> - Ran `Get-Content -Path server\utils\db.ts`
+> - Ran `Get-Content -Path server\api\tree.get.ts`
+> - Ran `Get-Content -Path server\api\folders.post.ts`
+> - Ran `node --version`
+> - Ran `Get-Content -Path server\api\move.post.ts`
+>
+> </details>
+</details>
+
+You do **not** install `node:sqlite`. It is a built-in Node module, and your `node --version` is `v24.18.0`, so it exists.
+
+The actual blocking error is here in [folders.post.ts](<./server/api/folders.post.ts:2>):
+
+```ts
+import { insertFolder } from '../utils/db
+```
+
+It is missing the closing quote:
+
+```ts
+import { insertFolder } from '../utils/db'
+```
+
+That’s why Nuxt says:
+
+```text
+ERROR: Unterminated string literal
+```
+
+The `node:sqlite` message:
+
+```text
+"node:sqlite" is imported by "server/utils/db.ts", but could not be resolved – treating it as an external dependency
+```
+
+is a warning from the bundler. For a Node built-in, “treating it as external” is usually fine because it means Nitro leaves it for Node to resolve at runtime. If it still fails after fixing the quote, then we’d look at Nitro config/runtime compatibility, but first fix the syntax error.
+
+> ok now it works. I am thinking to make the move file/folder interface a bit more intuitive (hence I started with Confirm Move). I am planning to insert a heading e.g. right above the dropdown one might insert a "Move To.." heading, but not sure how to structure it. Propose a textual diagram of the upper left corner of the interface (stay on brainstorm mode)
+>
+> User context
+>
+> Images:
+> - `data:image/png;base64,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`
+
+Yeah, the current controls work, but the visual grouping is a little ambiguous: `root` appears beside `+ Folder`, so it is not immediately obvious that the dropdown belongs to moving, not folder creation.
+
+I’d structure the upper-left like this:
+
+```text
+File Explorer
+
+[ + Folder ]
+
+Move selected item
+[ root                         v ]
+[ Confirm Move ]
+```
+
+That is probably the clearest MVP layout. It separates “create” from “move” as two small tool groups.
+
+Slightly more compact version:
+
+```text
+File Explorer
+
+[ + Folder ]
+
+Move to
+[ root                         v ]  [ Confirm Move ]
+```
+
+This is nice if you want to save vertical space, but it can get cramped in the left panel.
+
+My recommended version:
+
+```text
+File Explorer
+
+Actions
+[ + Folder ]
+
+Move selected item
+Destination
+[ root                         v ]
+[ Confirm Move ]
+```
+
+Why I like this: it makes the dropdown’s meaning explicit. The user reads it as a sentence:
+
+```text
+Move selected item -> Destination -> root -> Confirm Move
+```
+
+In the Vue template/CSS, this would mostly be a **template + CSS** change, not a logic change. You’d likely split the current `.tree-actions` into two visual groups:
+
+```text
+.tree-actions
+  .action-group
+    button + Folder
+
+  .action-group
+    label/heading Move selected item
+    select move destination
+    button Confirm Move
+```
+
+I would avoid making the heading too large. Something like `Move selected item` as a small label above the dropdown is enough. It should guide the eye without competing with `File Explorer`.
+
+> Alright now in plan mode, implement this change -- state what exactly needs changing in [app.vue](app/app.vue)
+> ```
+> File Explorer
+>
+> Actions
+> [ + Folder ]
+>
+> Move selected item
+> Destination
+> [ root                         v ]
+> [ Confirm Move ]
+> ```
+> "I would avoid making the heading too large" agreed
+
+<details><summary>4 previous messages</summary>
+
+> I’ll keep this as a planning pass and inspect the current `app.vue` structure so the plan points to the exact template/CSS blocks that need changing.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `Get-Content -Path app\app.vue`
+>
+> </details>
+>
+> Plan
+>
+> # Plan: Reorganize Move Controls In `app.vue`
+>
+> ## Summary
+>
+> Update only `app/app.vue` to make the upper-left controls read as two separate groups: folder creation first, then moving the selected item. This is a template/CSS change only; no TypeScript logic, API routes, or backend behavior should change.
+>
+> ## Template Changes
+>
+> Replace the current single flat `.tree-actions` block with two grouped sections:
+>
+> ```vue
+> <div class="tree-actions">
+>   <div class="action-group">
+>     <p class="action-heading">Actions</p>
+>
+>     <button type="button" @click.stop="handleCreateFolderClick">
+>       + Folder
+>     </button>
+>   </div>
+>
+>   <div class="action-group">
+>     <p class="action-heading">Move selected item</p>
+>
+>     <label class="control-label" for="move-destination">
+>       Destination
+>     </label>
+>
+>     <select
+>       id="move-destination"
+>       v-model="moveDestinationValue"
+>       class="move-select"
+>       :disabled="selectedNodeId === null"
+>     >
+>       <option
+>         v-for="destination in moveDestinations"
+>         :key="destination.value"
+>         :value="destination.value"
+>         :disabled="destination.disabled"
+>       >
+>         {{ destination.label }}
+>       </option>
+>     </select>
+>
+>     <button
+>       type="button"
+>       :disabled="!canMoveSelectedNode"
+>       @click.stop="handleMoveNodeClick"
+>     >
+>       Confirm Move
+>     </button>
+>   </div>
+> </div>
+> ```
+>
+> Resulting visual structure:
+>
+> ```text
+> File Explorer
+>
+> Actions
+> [ + Folder ]
+>
+> Move selected item
+> Destination
+> [ root                         v ]
+> [ Confirm Move ]
+> ```
+>
+> ## CSS Changes
+>
+> Adjust the existing control styles so the groups stack vertically:
+>
+> ```css
+> .tree-actions {
+>   display: flex;
+>   flex-direction: column;
+>   gap: 14px;
+>   width: 100%;
+> }
+>
+> .action-group {
+>   display: flex;
+>   flex-direction: column;
+>   align-items: flex-start;
+>   gap: 6px;
+>   width: 100%;
+> }
+>
+> .action-heading {
+>   margin: 0;
+>   font-size: 12px;
+>   font-weight: 700;
+>   color: #4b5563;
+> }
+>
+> .control-label {
+>   font-size: 12px;
+>   font-weight: 600;
+>   color: #4b5563;
+> }
+>
+> .move-select {
+>   width: 100%;
+>   min-width: 0;
+> }
+> ```
+>
+> Keep the existing button/select styling and disabled styling, but update selectors if needed so they still apply to buttons inside `.action-group`.
+>
+> ## Test Plan
+>
+> - Run `npm.cmd run build`.
+> - Manually check the left panel:
+>   - `+ Folder` appears under `Actions`.
+>   - Move dropdown appears under `Move selected item` and `Destination`.
+>   - `Confirm Move` remains disabled until a valid node/destination is selected.
+>   - Clicking controls does not clear the selected tree row.
+>
+> ## Assumptions
+>
+> - This change is intentionally visual/structural only.
+> - The existing `Confirm Move` label stays.
+> - The heading text should stay small and quiet, not hero-sized.
+>
+> Plan implementation
+>
+> Status: completed
+> # Plan: Reorganize Move Controls In `app.vue`
+>
+> ## Summary
+>
+> Update only `app/app.vue` to make the upper-left controls read as two separate groups: folder creation first, then moving the selected item. This is a template/CSS change only; no TypeScript logic, API routes, or backend behavior should change.
+>
+> ## Template Changes
+>
+> Replace the current single flat `.tree-actions` block with two grouped sections:
+>
+> ```vue
+> <div class="tree-actions">
+>   <div class="action-group">
+>     <p class="action-heading">Actions</p>
+>
+>     <button type="button" @click.stop="handleCreateFolderClick">
+>       + Folder
+>     </button>
+>   </div>
+>
+>   <div class="action-group">
+>     <p class="action-heading">Move selected item</p>
+>
+>     <label class="control-label" for="move-destination">
+>       Destination
+>     </label>
+>
+>     <select
+>       id="move-destination"
+>       v-model="moveDestinationValue"
+>       class="move-select"
+>       :disabled="selectedNodeId === null"
+>     >
+>       <option
+>         v-for="destination in moveDestinations"
+>         :key="destination.value"
+>         :value="destination.value"
+>         :disabled="destination.disabled"
+>       >
+>         {{ destination.label }}
+>       </option>
+>     </select>
+>
+>     <button
+>       type="button"
+>       :disabled="!canMoveSelectedNode"
+>       @click.stop="handleMoveNodeClick"
+>     >
+>       Confirm Move
+>     </button>
+>   </div>
+> </div>
+> ```
+>
+> Resulting visual structure:
+>
+> ```text
+> File Explorer
+>
+> Actions
+> [ + Folder ]
+>
+> Move selected item
+> Destination
+> [ root                         v ]
+> [ Confirm Move ]
+> ```
+>
+> ## CSS Changes
+>
+> Adjust the existing control styles so the groups stack vertically:
+>
+> ```css
+> .tree-actions {
+>   display: flex;
+>   flex-direction: column;
+>   gap: 14px;
+>   width: 100%;
+> }
+>
+> .action-group {
+>   display: flex;
+>   flex-direction: column;
+>   align-items: flex-start;
+>   gap: 6px;
+>   width: 100%;
+> }
+>
+> .action-heading {
+>   margin: 0;
+>   font-size: 12px;
+>   font-weight: 700;
+>   color: #4b5563;
+> }
+>
+> .control-label {
+>   font-size: 12px;
+>   font-weight: 600;
+>   color: #4b5563;
+> }
+>
+> .move-select {
+>   width: 100%;
+>   min-width: 0;
+> }
+> ```
+>
+> Keep the existing button/select styling and disabled styling, but update selectors if needed so they still apply to buttons inside `.action-group`.
+>
+> ## Test Plan
+>
+> - Run `npm.cmd run build`.
+> - Manually check the left panel:
+>   - `+ Folder` appears under `Actions`.
+>   - Move dropdown appears under `Move selected item` and `Destination`.
+>   - `Confirm Move` remains disabled until a valid node/destination is selected.
+>   - Clicking controls does not clear the selected tree row.
+>
+> ## Assumptions
+>
+> - This change is intentionally visual/structural only.
+> - The existing `Confirm Move` label stays.
+> - The heading text should stay small and quiet, not hero-sized.
+</details>
+
+> PLEASE IMPLEMENT THIS PLAN:
+> # Plan: Reorganize Move Controls In `app.vue`
+>
+> ## Summary
+>
+> Update only `app/app.vue` to make the upper-left controls read as two separate groups: folder creation first, then moving the selected item. This is a template/CSS change only; no TypeScript logic, API routes, or backend behavior should change.
+>
+> ## Template Changes
+>
+> Replace the current single flat `.tree-actions` block with two grouped sections:
+>
+> ```vue
+> <div class="tree-actions">
+>   <div class="action-group">
+>     <p class="action-heading">Actions</p>
+>
+>     <button type="button" @click.stop="handleCreateFolderClick">
+>       + Folder
+>     </button>
+>   </div>
+>
+>   <div class="action-group">
+>     <p class="action-heading">Move selected item</p>
+>
+>     <label class="control-label" for="move-destination">
+>       Destination
+>     </label>
+>
+>     <select
+>       id="move-destination"
+>       v-model="moveDestinationValue"
+>       class="move-select"
+>       :disabled="selectedNodeId === null"
+>     >
+>       <option
+>         v-for="destination in moveDestinations"
+>         :key="destination.value"
+>         :value="destination.value"
+>         :disabled="destination.disabled"
+>       >
+>         {{ destination.label }}
+>       </option>
+>     </select>
+>
+>     <button
+>       type="button"
+>       :disabled="!canMoveSelectedNode"
+>       @click.stop="handleMoveNodeClick"
+>     >
+>       Confirm Move
+>     </button>
+>   </div>
+> </div>
+> ```
+>
+> Resulting visual structure:
+>
+> ```text
+> File Explorer
+>
+> Actions
+> [ + Folder ]
+>
+> Move selected item
+> Destination
+> [ root                         v ]
+> [ Confirm Move ]
+> ```
+>
+> ## CSS Changes
+>
+> Adjust the existing control styles so the groups stack vertically:
+>
+> ```css
+> .tree-actions {
+>   display: flex;
+>   flex-direction: column;
+>   gap: 14px;
+>   width: 100%;
+> }
+>
+> .action-group {
+>   display: flex;
+>   flex-direction: column;
+>   align-items: flex-start;
+>   gap: 6px;
+>   width: 100%;
+> }
+>
+> .action-heading {
+>   margin: 0;
+>   font-size: 12px;
+>   font-weight: 700;
+>   color: #4b5563;
+> }
+>
+> .control-label {
+>   font-size: 12px;
+>   font-weight: 600;
+>   color: #4b5563;
+> }
+>
+> .move-select {
+>   width: 100%;
+>   min-width: 0;
+> }
+> ```
+>
+> Keep the existing button/select styling and disabled styling, but update selectors if needed so they still apply to buttons inside `.action-group`.
+>
+> ## Test Plan
+>
+> - Run `npm.cmd run build`.
+> - Manually check the left panel:
+>   - `+ Folder` appears under `Actions`.
+>   - Move dropdown appears under `Move selected item` and `Destination`.
+>   - `Confirm Move` remains disabled until a valid node/destination is selected.
+>   - Clicking controls does not clear the selected tree row.
+>
+> ## Assumptions
+>
+> - This change is intentionally visual/structural only.
+> - The existing `Confirm Move` label stays.
+> - The heading text should stay small and quiet, not hero-sized.
+
+<details><summary>8 previous messages</summary>
+
+> I’ll make this as a narrow `app.vue` template/CSS edit only. I’m checking the required docs quickly, then I’ll patch the control layout and run the build.
+>
+> <details><summary>Ran 5 commands</summary>
+>
+> - Ran `Get-Content -Path README.md`
+> - Ran `Get-Content -Path specs\spec-file-explorer.md`
+> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
+> - Ran `Get-Content -Path AI_USAGE.md`
+> - Ran `Get-Content -Path app\app.vue`
+>
+> </details>
+>
+> I’ve confirmed the requested change is confined to the header controls. I’m replacing the flat action row with two stacked action groups, then I’ll build to catch any Vue template mistakes.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+81 -47)
+>
+> </details>
+>
+> The UI grouping patch is in. Now I’m running the build; if anything fails, it should be either a template typo from this edit or one of the recent SQLite-route changes surfacing in production build.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `npm.cmd run build`
+>
+> </details>
+>
+> The first build attempt didn’t report a template error, but it timed out while Nuxt was still building. I’m going to rerun it with a longer timeout so we get a real pass/fail instead of a stopwatch answer.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `npm.cmd run build`
+>
+> </details>
+</details>
+
+Implemented the control regrouping in [app.vue](<./app/app.vue>).
+
+The upper-left panel now reads as:
+
+```text
+File Explorer
+
+Actions
+[ + Folder ]
+
+Move selected item
+Destination
+[ root                         v ]
+[ Confirm Move ]
+```
+
+I only changed the template/CSS structure: no TypeScript logic, API route behavior, or backend code was changed.
+
+Verification: `npm.cmd run build` passed on the rerun. The build still reports existing warnings about duplicate Nuxt auto-import names from `db.ts`/`node-store.ts`, `node:sqlite` being externalized, and a sourcemap/deprecation warning, but no build error.
+
+> in [app.vue](app/app.vue) , implementation wise how hard would it be to implement a toggle to collapse folders?
+
+Not hard. I’d call it a **small-to-medium frontend change**, mostly because your current rendering is already flattened through `displayNodes`.
+
+Right now the flow is:
+
+```text
+TreeNode[]
+  -> flattenTree(tree.value)
+  -> DisplayNode[]
+  -> v-for renders every row
+```
+
+To support collapsed folders, we add one piece of state:
+
+```ts
+const collapsedFolderIds = ref<Set<string>>(new Set())
+```
+
+Then update `flattenTree(...)` so when it reaches a folder whose id is in `collapsedFolderIds`, it returns the folder row but does **not** recurse into its children.
+
+Conceptually:
+
+```ts
+function flattenTree(nodes, depth = 0, ancestorIds = []) {
+  return nodes.flatMap((node) => {
+    const displayNode = { ...node, depth, ancestorIds }
+
+    if (node.type === 'folder' && collapsedFolderIds.value.has(node.id)) {
+      return [displayNode]
+    }
+
+    return [
+      displayNode,
+      ...flattenTree(node.children, depth + 1, [...ancestorIds, node.id])
+    ]
+  })
+}
+```
+
+Then add a click handler:
+
+```ts
+function toggleFolderCollapsed(node: DisplayNode): void {
+  if (node.type !== 'folder') return
+
+  const next = new Set(collapsedFolderIds.value)
+
+  if (next.has(node.id)) {
+    next.delete(node.id)
+  } else {
+    next.add(node.id)
+  }
+
+  collapsedFolderIds.value = next
+}
+```
+
+The important Vue detail: with `Set`, you generally create a new `Set` and reassign it, instead of mutating the existing one in place, so Vue reliably notices the change.
+
+Template-wise, each folder row gets a small collapse/expand button before the folder icon:
+
+```text
+[▾] 📂 310-product-a
+[▸] 📂 310-governance
+    📄 310-ARCHITECTURE.md
+```
+
+Clicking the collapse button should use `@click.stop` so it doesn’t accidentally trigger row selection or clear selection.
+
+One subtle bit: because `moveDestinations` currently depends on `displayNodes`, collapsed folders might disappear from the move dropdown if we reuse the same flattened list. That’s probably **not** what we want. Best design would be:
+
+```text
+visibleDisplayNodes
+  for rendering rows, respects collapsed folders
+
+allDisplayNodes
+  for move destinations, ignores collapsed folders
+```
+
+So implementation is straightforward, but I’d do it carefully:
+- keep all folders available as move destinations
+- only hide descendants in the visual tree
+- preserve selected row behavior
+- preserve preview behavior for files
+- preserve indentation guides
+
+No backend/database changes needed. This is entirely `app.vue`.
+
+> ALright good catch on the subtle point. I agree with the design you proposed at the end. Stay in plan mode for now, propose exactly what changes in [app.vue](app/app.vue)
+
+<details><summary>4 previous messages</summary>
+
+> I’ll stay in planning mode and re-read the current `app.vue` so the collapse plan names the exact reactive values, computed helpers, template spots, and CSS selectors to change.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `Get-Content -Path app\app.vue`
+>
+> </details>
+>
+> Plan
+>
+> # Plan: Add Folder Collapse Toggle In `app.vue`
+>
+> ## Summary
+>
+> Implement folder collapse/expand entirely in `app/app.vue`. This is frontend-only UI state: it hides or shows visible tree rows, while the full tree remains available for selection lookup and move-destination logic.
+>
+> ## Key Changes
+>
+> - Add collapse state:
+>   ```ts
+>   const collapsedFolderIds = ref<Set<string>>(new Set())
+>   ```
+>
+> - Update `flattenTree(...)` to accept an optional `collapsedIds` set:
+>   ```ts
+>   function flattenTree(
+>     nodes: TreeNode[],
+>     depth = 0,
+>     ancestorIds: string[] = [],
+>     collapsedIds: Set<string> | null = null
+>   ): DisplayNode[]
+>   ```
+>   If a folder id is in `collapsedIds`, return the folder row but do not recurse into its children.
+>
+> - Split the current `displayNodes` into two computed values:
+>   ```ts
+>   const allDisplayNodes = computed(...)
+>   const visibleDisplayNodes = computed(...)
+>   ```
+>   Use `allDisplayNodes` for `selectedNode` and `moveDestinations`, so collapsed descendants still exist in move logic. Use `visibleDisplayNodes` only for rendering the tree rows.
+>
+> - Add helper functions with comments/docstrings:
+>   ```ts
+>   function isFolderCollapsed(nodeId: string): boolean
+>   function expandFolder(folderId: string): void
+>   function toggleFolderCollapsed(node: DisplayNode): void
+>   ```
+>   `toggleFolderCollapsed(node)` should:
+>   - ignore non-folder nodes
+>   - use a copied `Set` before reassignment so Vue detects the update
+>   - clear selection/preview if collapsing a folder hides the currently selected descendant
+>
+> - Slightly update existing handlers:
+>   - `handleCreateFolderClick()` should expand the selected parent folder after creating a child folder, so the new folder is visible.
+>   - `handleMoveNodeClick()` should expand the destination folder after a successful move, so the moved item is visible.
+>
+> ## Template Changes
+>
+> - Change the tree list loop:
+>   ```vue
+>   v-for="node in visibleDisplayNodes"
+>   ```
+>
+> - Add a small collapse toggle between indentation guides and the folder/file icon:
+>   ```vue
+>   <button
+>     v-if="node.type === 'folder' && node.children.length > 0"
+>     type="button"
+>     class="collapse-toggle"
+>     :aria-label="isFolderCollapsed(node.id) ? `Expand ${node.name}` : `Collapse ${node.name}`"
+>     :aria-expanded="!isFolderCollapsed(node.id)"
+>     @click.stop="toggleFolderCollapsed(node)"
+>   >
+>     {{ isFolderCollapsed(node.id) ? '>' : 'v' }}
+>   </button>
+>
+>   <span v-else class="collapse-spacer" aria-hidden="true" />
+>   ```
+>
+> - Keep row selection on the existing `<li @click.stop="selectNode(node)">`; clicking the collapse toggle should not select/deselect the row because it uses `@click.stop`.
+>
+> ## CSS Changes
+>
+> - Add stable sizing for the toggle so tree rows do not shift:
+>   ```css
+>   .collapse-toggle,
+>   .collapse-spacer {
+>     display: inline-flex;
+>     align-items: center;
+>     justify-content: center;
+>     flex: 0 0 18px;
+>     width: 18px;
+>     height: 18px;
+>   }
+>
+>   .collapse-toggle {
+>     padding: 0;
+>     border: 0;
+>     background: transparent;
+>     color: #4b5563;
+>     cursor: pointer;
+>     font: inherit;
+>     font-size: 12px;
+>   }
+>
+>   .collapse-toggle:hover {
+>     border-radius: 3px;
+>     background: #dbeafe;
+>   }
+>   ```
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually check:
+>   - folder toggle hides descendants but leaves the folder row visible
+>   - expanding restores descendants
+>   - files do not show a toggle
+>   - selecting a file then collapsing its parent clears the hidden selection/preview
+>   - move dropdown still includes valid folder destinations even if parts of the tree are collapsed
+>   - creating/moving into a collapsed folder expands that destination so the new/moved item is visible
+>
+> ## Assumptions
+>
+> - Collapse state is UI-only and does not persist in SQLite.
+> - Use simple ASCII symbols `>` and `v` for now.
+> - No API, database, or server utility changes are needed.
+>
+> Plan implementation
+>
+> Status: completed
+> # Plan: Add Folder Collapse Toggle In `app.vue`
+>
+> ## Summary
+>
+> Implement folder collapse/expand entirely in `app/app.vue`. This is frontend-only UI state: it hides or shows visible tree rows, while the full tree remains available for selection lookup and move-destination logic.
+>
+> ## Key Changes
+>
+> - Add collapse state:
+>   ```ts
+>   const collapsedFolderIds = ref<Set<string>>(new Set())
+>   ```
+>
+> - Update `flattenTree(...)` to accept an optional `collapsedIds` set:
+>   ```ts
+>   function flattenTree(
+>     nodes: TreeNode[],
+>     depth = 0,
+>     ancestorIds: string[] = [],
+>     collapsedIds: Set<string> | null = null
+>   ): DisplayNode[]
+>   ```
+>   If a folder id is in `collapsedIds`, return the folder row but do not recurse into its children.
+>
+> - Split the current `displayNodes` into two computed values:
+>   ```ts
+>   const allDisplayNodes = computed(...)
+>   const visibleDisplayNodes = computed(...)
+>   ```
+>   Use `allDisplayNodes` for `selectedNode` and `moveDestinations`, so collapsed descendants still exist in move logic. Use `visibleDisplayNodes` only for rendering the tree rows.
+>
+> - Add helper functions with comments/docstrings:
+>   ```ts
+>   function isFolderCollapsed(nodeId: string): boolean
+>   function expandFolder(folderId: string): void
+>   function toggleFolderCollapsed(node: DisplayNode): void
+>   ```
+>   `toggleFolderCollapsed(node)` should:
+>   - ignore non-folder nodes
+>   - use a copied `Set` before reassignment so Vue detects the update
+>   - clear selection/preview if collapsing a folder hides the currently selected descendant
+>
+> - Slightly update existing handlers:
+>   - `handleCreateFolderClick()` should expand the selected parent folder after creating a child folder, so the new folder is visible.
+>   - `handleMoveNodeClick()` should expand the destination folder after a successful move, so the moved item is visible.
+>
+> ## Template Changes
+>
+> - Change the tree list loop:
+>   ```vue
+>   v-for="node in visibleDisplayNodes"
+>   ```
+>
+> - Add a small collapse toggle between indentation guides and the folder/file icon:
+>   ```vue
+>   <button
+>     v-if="node.type === 'folder' && node.children.length > 0"
+>     type="button"
+>     class="collapse-toggle"
+>     :aria-label="isFolderCollapsed(node.id) ? `Expand ${node.name}` : `Collapse ${node.name}`"
+>     :aria-expanded="!isFolderCollapsed(node.id)"
+>     @click.stop="toggleFolderCollapsed(node)"
+>   >
+>     {{ isFolderCollapsed(node.id) ? '>' : 'v' }}
+>   </button>
+>
+>   <span v-else class="collapse-spacer" aria-hidden="true" />
+>   ```
+>
+> - Keep row selection on the existing `<li @click.stop="selectNode(node)">`; clicking the collapse toggle should not select/deselect the row because it uses `@click.stop`.
+>
+> ## CSS Changes
+>
+> - Add stable sizing for the toggle so tree rows do not shift:
+>   ```css
+>   .collapse-toggle,
+>   .collapse-spacer {
+>     display: inline-flex;
+>     align-items: center;
+>     justify-content: center;
+>     flex: 0 0 18px;
+>     width: 18px;
+>     height: 18px;
+>   }
+>
+>   .collapse-toggle {
+>     padding: 0;
+>     border: 0;
+>     background: transparent;
+>     color: #4b5563;
+>     cursor: pointer;
+>     font: inherit;
+>     font-size: 12px;
+>   }
+>
+>   .collapse-toggle:hover {
+>     border-radius: 3px;
+>     background: #dbeafe;
+>   }
+>   ```
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually check:
+>   - folder toggle hides descendants but leaves the folder row visible
+>   - expanding restores descendants
+>   - files do not show a toggle
+>   - selecting a file then collapsing its parent clears the hidden selection/preview
+>   - move dropdown still includes valid folder destinations even if parts of the tree are collapsed
+>   - creating/moving into a collapsed folder expands that destination so the new/moved item is visible
+>
+> ## Assumptions
+>
+> - Collapse state is UI-only and does not persist in SQLite.
+> - Use simple ASCII symbols `>` and `v` for now.
+> - No API, database, or server utility changes are needed.
+</details>
+
+> PLEASE IMPLEMENT THIS PLAN:
+> # Plan: Add Folder Collapse Toggle In `app.vue`
+>
+> ## Summary
+>
+> Implement folder collapse/expand entirely in `app/app.vue`. This is frontend-only UI state: it hides or shows visible tree rows, while the full tree remains available for selection lookup and move-destination logic.
+>
+> ## Key Changes
+>
+> - Add collapse state:
+>   ```ts
+>   const collapsedFolderIds = ref<Set<string>>(new Set())
+>   ```
+>
+> - Update `flattenTree(...)` to accept an optional `collapsedIds` set:
+>   ```ts
+>   function flattenTree(
+>     nodes: TreeNode[],
+>     depth = 0,
+>     ancestorIds: string[] = [],
+>     collapsedIds: Set<string> | null = null
+>   ): DisplayNode[]
+>   ```
+>   If a folder id is in `collapsedIds`, return the folder row but do not recurse into its children.
+>
+> - Split the current `displayNodes` into two computed values:
+>   ```ts
+>   const allDisplayNodes = computed(...)
+>   const visibleDisplayNodes = computed(...)
+>   ```
+>   Use `allDisplayNodes` for `selectedNode` and `moveDestinations`, so collapsed descendants still exist in move logic. Use `visibleDisplayNodes` only for rendering the tree rows.
+>
+> - Add helper functions with comments/docstrings:
+>   ```ts
+>   function isFolderCollapsed(nodeId: string): boolean
+>   function expandFolder(folderId: string): void
+>   function toggleFolderCollapsed(node: DisplayNode): void
+>   ```
+>   `toggleFolderCollapsed(node)` should:
+>   - ignore non-folder nodes
+>   - use a copied `Set` before reassignment so Vue detects the update
+>   - clear selection/preview if collapsing a folder hides the currently selected descendant
+>
+> - Slightly update existing handlers:
+>   - `handleCreateFolderClick()` should expand the selected parent folder after creating a child folder, so the new folder is visible.
+>   - `handleMoveNodeClick()` should expand the destination folder after a successful move, so the moved item is visible.
+>
+> ## Template Changes
+>
+> - Change the tree list loop:
+>   ```vue
+>   v-for="node in visibleDisplayNodes"
+>   ```
+>
+> - Add a small collapse toggle between indentation guides and the folder/file icon:
+>   ```vue
+>   <button
+>     v-if="node.type === 'folder' && node.children.length > 0"
+>     type="button"
+>     class="collapse-toggle"
+>     :aria-label="isFolderCollapsed(node.id) ? `Expand ${node.name}` : `Collapse ${node.name}`"
+>     :aria-expanded="!isFolderCollapsed(node.id)"
+>     @click.stop="toggleFolderCollapsed(node)"
+>   >
+>     {{ isFolderCollapsed(node.id) ? '>' : 'v' }}
+>   </button>
+>
+>   <span v-else class="collapse-spacer" aria-hidden="true" />
+>   ```
+>
+> - Keep row selection on the existing `<li @click.stop="selectNode(node)">`; clicking the collapse toggle should not select/deselect the row because it uses `@click.stop`.
+>
+> ## CSS Changes
+>
+> - Add stable sizing for the toggle so tree rows do not shift:
+>   ```css
+>   .collapse-toggle,
+>   .collapse-spacer {
+>     display: inline-flex;
+>     align-items: center;
+>     justify-content: center;
+>     flex: 0 0 18px;
+>     width: 18px;
+>     height: 18px;
+>   }
+>
+>   .collapse-toggle {
+>     padding: 0;
+>     border: 0;
+>     background: transparent;
+>     color: #4b5563;
+>     cursor: pointer;
+>     font: inherit;
+>     font-size: 12px;
+>   }
+>
+>   .collapse-toggle:hover {
+>     border-radius: 3px;
+>     background: #dbeafe;
+>   }
+>   ```
+>
+> ## Verification
+>
+> - Run `npm.cmd run build`.
+> - Manually check:
+>   - folder toggle hides descendants but leaves the folder row visible
+>   - expanding restores descendants
+>   - files do not show a toggle
+>   - selecting a file then collapsing its parent clears the hidden selection/preview
+>   - move dropdown still includes valid folder destinations even if parts of the tree are collapsed
+>   - creating/moving into a collapsed folder expands that destination so the new/moved item is visible
+>
+> ## Assumptions
+>
+> - Collapse state is UI-only and does not persist in SQLite.
+> - Use simple ASCII symbols `>` and `v` for now.
+> - No API, database, or server utility changes are needed.
+
+<details><summary>28 previous messages</summary>
+
+> I’ll make this entirely inside `app.vue`: split visible-vs-all flattened rows, add UI-only collapsed folder state, and keep move destinations based on the full tree so collapse doesn’t accidentally remove valid targets.
+>
+> <details><summary>Ran 5 commands</summary>
+>
+> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
+> - Ran `Get-Content -Path specs\spec-file-explorer.md`
+> - Ran `Get-Content -Path README.md`
+> - Ran `Get-Content -Path AI_USAGE.md`
+> - Ran `Get-Content -Path app\app.vue`
+>
+> </details>
+>
+> I’m applying the collapse toggle now. The key care point is exactly the one we discussed: `visibleDisplayNodes` will drive the rendered rows, while `allDisplayNodes` remains available for selection lookup and move destinations.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+160 -66)
+>
+> </details>
+>
+> One implementation wrinkle: I’m also moving the collapsed-state declaration above the computed that reads it, so the file stays easy to reason about for future-you. Next patch is the template toggle and its stable CSS sizing.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+66 -30)
+>
+> </details>
+>
+> The patch missed because the exact template snippet has shifted slightly. I’ll read the nearby sections and apply a tighter patch against what’s actually in the file.
+>
+> <details><summary>Ran 5 commands</summary>
+>
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 340 -First 70`
+> - Ran `Select-String -Path app\app.vue -Pattern "ROOT_DESTINATION_VALUE|collapsedFolderIds|v-for=\"node|tree-row:hover|node-icon" -Context 4,6`
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 430 -First 70`
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 500 -First 130`
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 30 -First 100`
+>
+> </details>
+>
+> The first code patch landed; I just need to complete the state-order cleanup and render/CSS part.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 130 -First 50`
+>
+> </details>
+>
+> I found the collapse state was still declared after `visibleDisplayNodes`; it would probably work lazily, but I’m putting it above the computed so the script reads cleanly and avoids any temporal-dead-zone weirdness.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+5 -5)
+>
+> </details>
+>
+> Now I’m wiring the actual visual control into each tree row and switching the row loop to the collapsed-aware display list.
+>
+> <details><summary>Edited a file, ran a command</summary>
+>
+> - Wrote `./app/app.vue` (+23 -12)
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 520 -First 40`
+>
+> </details>
+>
+> That second patch was too picky about the row snippet. I’m splitting it into smaller edits so it doesn’t get tripped up by nearby encoded icon text.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+1 -1)
+>
+> </details>
+>
+> The loop is now using `visibleDisplayNodes`; next I’m inserting the toggle control just before the icon.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+22 -11)
+>
+> </details>
+>
+> The insert is still catching on exact context, so I’m using the stable `tree-guide` closing lines rather than the icon text.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+14 -3)
+>
+> </details>
+>
+> The toggle is in the row now. I’m adding fixed-size styles so folders/files don’t shift around as rows expand or collapse.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./app/app.vue` (+32 -7)
+>
+> </details>
+>
+> All requested code pieces are in place. I’ll read the touched parts once, then run the Nuxt build to catch any type/template issues.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 520 -First 90`
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 40 -First 210`
+> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 640 -First 90`
+>
+> </details>
+>
+> The code reads correctly. I’m running the production build now; given the recent SQLite work, I expect the usual externalized `node:sqlite`/duplicate auto-import warnings, but I’m watching for real Vue or TypeScript errors.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `npm.cmd run build`
+>
+> </details>
+>
+> Build passed. I’m doing one final quick search for any leftover `displayNodes` references so the old render variable isn’t dangling anywhere.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `git diff -- app\app.vue`
+> - Ran `rg "displayNodes|visibleDisplayNodes|allDisplayNodes|collapsedFolderIds" app\app.vue`
+> - Ran `git status --short`
+>
+> </details>
+</details>
+
+Implemented folder collapse/expand in [app.vue](<./app/app.vue>).
+
+What changed:
+- Added UI-only `collapsedFolderIds` state.
+- Split flattened rows into `allDisplayNodes` and `visibleDisplayNodes`.
+- Kept move destinations based on the full tree, so collapsed folders still work as destinations.
+- Added `>` / `v` collapse buttons for folders with children.
+- Clear selection/preview when collapsing a folder hides the selected descendant.
+- Expand the destination/parent folder after create or move so the result is visible.
+
+Verification: `npm.cmd run build` passed. The usual warnings remain: duplicate Nuxt auto-import names from `db.ts`/`node-store.ts`, `node:sqlite` externalization, sourcemap warning, and Vue package deprecation warning. No build errors.
+
+> alright the spec needs catching up from db persistence up to the recent collapse/expand folder functionality. From the context lets brainstorm needs changing/expanding/rectifying in [spec-file-explorer.md](specs/spec-file-explorer.md)
+
+<details><summary>2 previous messages</summary>
+
+> I’ll keep this read-only and inspect the current spec plus the relevant implementation shape, then I’ll map what’s stale versus what should be added.
+>
+> <details><summary>Ran 7 commands</summary>
+>
+> - Ran `Get-Content -Path specs\spec-file-explorer.md`
+> - Ran `Get-Content -Path app\app.vue`
+> - Ran `Get-Content -Path server\utils\db.ts`
+> - Ran `Get-Content -Path server\api\move.post.ts`
+> - Ran `Get-Content -Path server\api\folders.post.ts`
+> - Ran `Get-Content -Path server\api\tree.get.ts`
+> - Ran `Get-Content -Path server\api\markdown.get.ts`
+>
+> </details>
+</details>
+
+Yes, the spec is now lagging behind the actual app in a few important places. I’d treat this as a **targeted catch-up rewrite**, not a full rewrite from scratch.
+
+Here’s what I think needs changing/expanding.
+
+**1. High-Level MVP Program Flow**
+
+Mostly still right, but it should now say the app actually uses SQLite through `server/utils/db.ts`, not just “should.” It should also mention:
+
+```text
+GET /api/tree
+  -> loadNodes() from SQLite
+  -> buildTree(nodes)
+  -> return TreeNode[]
+
+POST /api/folders
+POST /api/move
+  -> update SQLite
+  -> reload nodes
+  -> rebuild tree
+  -> return TreeNode[]
+```
+
+Also add that collapse/expand is **frontend-only UI state** and not persisted.
+
+**2. Development Plan**
+
+Stage 4 is no longer hypothetical. It should be updated from “Goals” to something like “Implemented direction” or “Current implementation direction.”
+
+Add/expand stages:
+
+```text
+Stage 4: SQLite persistence
+Stage 5: File preview
+Stage 6: UI ergonomics
+  - grouped action controls
+  - move destination dropdown
+  - folder collapse/expand
+```
+
+Or if you want to keep the staged-learning style, add:
+
+```text
+#### Stage 4.1: Swap API routes from in-memory store to SQLite
+#### Stage 4.2: UI polish and tree interaction
+```
+
+**3. UI Behavior**
+
+This needs the biggest catch-up. Current UI behavior now includes:
+
+- left panel tree
+- right panel Markdown preview
+- grouped upper-left controls:
+  ```text
+  Actions
+  + Folder
+
+  Move selected item
+  Destination
+  Confirm Move
+  ```
+- folder rows with children have a `>` / `v` collapse toggle
+- files do not have a collapse toggle
+- collapsing a folder hides descendants but leaves the folder row visible
+- collapse state is not persisted
+- move dropdown still uses the full tree, not only visible rows
+- selecting a file loads preview
+- selecting a folder clears preview
+- clicking empty tree panel clears selection and preview
+
+**4. Frontend Rendering Flow**
+
+This section is stale because it still talks about one `displayNodes`.
+
+It should now describe:
+
+```text
+tree.value
+  -> allDisplayNodes
+       full flattened tree, ignores collapsed folders
+       used for selectedNode and moveDestinations
+
+  -> visibleDisplayNodes
+       flattened tree respecting collapsedFolderIds
+       used by template v-for
+```
+
+And add:
+
+```text
+collapsedFolderIds
+  UI-only Set<string>
+  tracks which folders are collapsed
+```
+
+**5. Frontend Helpers And State**
+
+Update the reactive state list:
+
+```ts
+collapsedFolderIds: Set<string>
+allDisplayNodes
+visibleDisplayNodes
+moveDestinationValue
+markdownPreview
+previewPending
+previewError
+```
+
+Update helpers:
+
+```ts
+flattenTree(tree, depth, ancestorIds, collapsedIds)
+isFolderCollapsed(nodeId)
+expandFolder(folderId)
+toggleFolderCollapsed(node)
+loadMarkdownPreview(fileId)
+clearMarkdownPreview()
+handleMoveNodeClick()
+```
+
+Also note the subtle rule:
+
+```text
+allDisplayNodes is used for move options so collapsed folders do not disappear as possible destinations.
+```
+
+**6. Persistence / DB Operations**
+
+This section needs to become concrete. Add the actual chosen implementation details:
+
+- `server/utils/db.ts`
+- built-in `node:sqlite`
+- `DatabaseSync`
+- database file: `data/file-explorer.sqlite`
+- `data/` is gitignored
+- table: `nodes`
+- SQLite uses snake_case columns, app uses camelCase
+
+Also note that `insertFolder()` and `updateNodeParent()` reuse pure `createFolder()` / `moveNode()` for validation and then persist only the operation result.
+
+**7. Server API Comments**
+
+The spec is right in concept, but route comments/code have moved ahead:
+
+- `GET /api/tree` now uses `db.ts`, not `node-store.ts`
+- `POST /api/folders` now uses SQLite-backed `insertFolder`
+- `POST /api/move` now uses SQLite-backed `updateNodeParent`
+- `GET /api/markdown` uses SQLite-backed `loadNodes`
+
+Spec should reflect that `node-store.ts` is now historical/prototype code.
+
+**8. Validation Rules**
+
+Add UI-specific validation/behavior:
+
+- move destination dropdown excludes selected folder and descendants
+- current location is shown but disabled
+- moving to root uses a frontend sentinel value converted to `null`
+- collapsing a folder that contains the selected node clears the hidden selection/preview
+- creating/moving into a collapsed destination should expand that folder so the result is visible
+
+**9. Test Plan / Manual Checklist**
+
+Add checklist items:
+
+```text
+- SQLite database is created under data/
+- Initial DB seed happens once
+- Refresh/restart preserves created folders
+- Refresh/restart preserves moved nodes
+- Collapse hides descendants
+- Expand restores descendants
+- Move dropdown still includes collapsed folders as destinations
+- Collapsing parent of selected file clears preview
+- Creating/moving into a collapsed folder expands that folder
+```
+
+**10. Open Questions**
+
+Some open questions are now resolved or stale:
+
+Remove/resolve:
+
+```text
+Should node:sqlite be used directly?
+```
+
+Resolved: yes, current implementation uses built-in `node:sqlite`.
+
+Maybe keep:
+
+```text
+Should duplicate folder names be allowed under same parent?
+Should unknown filename patterns be unclassified or rejected?
+Should IDs remain deterministic slugs?
+```
+
+Also the warning:
+
+```text
+creating a folder beneath a file should throw an error
+```
+
+This may still be a product concern depending on UI behavior, but backend pure logic rejects file parents. The UI currently treats selected file as root destination for create-folder, so the spec should clarify whether that is intentional or should change.
+
+> alright let us go into plan mode to revise the spec [spec-file-explorer.md](specs/spec-file-explorer.md)
+
+<details><summary>6 previous messages</summary>
+
+> I’ll keep this in planning mode and do a quick targeted pass over the current spec plus the implementation points the spec needs to catch up with. Then I’ll identify any decisions we need to lock before writing a clean revision plan.
+>
+> <details><summary>Ran 4 commands</summary>
+>
+> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern "Stage 4|UI Behavior|Frontend Rendering|Frontend Rendering Helpers|Persistence / DB|Open Questions|displayNodes|node:sqlite|node-store|Preview markdown|Move file" -Context 3,6`
+> - Ran `Select-String -Path app\app.vue -Pattern "allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|toggleFolderCollapsed|handleCreateFolderClick|handleMoveNodeClick|moveDestinations|markdownPreview" -Context 2,4`
+> - Ran `Select-String -Path server\utils\db.ts -Pattern "DATABASE_PATH|ensureDatabase|seedDatabaseIfEmpty|loadNodes|insertFolder|updateNodeParent|CREATE TABLE" -Context 2,5`
+> - Ran `Select-String -Path server\api\*.ts -Pattern "../utils/db|node-store|temporary in-memory|SQLite|GET /api|POST /api" -Context 1,4`
+>
+> </details>
+>
+> The repo truth is clear now: APIs import from `db.ts`, SQLite is active, `node-store.ts` is now prototype/reference code, and `app.vue` has both `allDisplayNodes` and collapsed-aware `visibleDisplayNodes`. Before I lock the spec-revision plan, there are two product/spec choices worth deciding rather than burying as accidental behavior.
+>
+> User input response
+>
+> - When a file is selected and the user clicks `+ Folder`, what should the spec say should happen?
+>   - Create at root (Recommended)
+> - How should the revised Development Plan section treat the earlier stages?
+>   - Historical + current (Recommended)
+>
+> Plan
+>
+> # Plan: Catch Up `spec-file-explorer.md`
+>
+> ## Summary
+>
+> Revise only `specs/spec-file-explorer.md` so it reflects the current app: SQLite-backed persistence through `db.ts`, API routes using the DB layer, Markdown preview behavior, grouped move controls, and frontend-only folder collapse/expand. Preserve the current section structure and learning-stage narrative, but mark the app’s current architecture clearly.
+>
+> ## Key Spec Updates
+>
+> - Update MVP flow to describe the actual current path:
+>   - `GET /api/tree` loads SQLite rows through `db.ts`, calls `buildTree(nodes)`, and returns `TreeNode[]`.
+>   - `POST /api/folders` and `POST /api/move` update SQLite, reload rows, rebuild the tree, and return updated `TreeNode[]`.
+>   - `GET /api/markdown?fileId=...` looks up the virtual file node, then reads Markdown content from `files/`.
+>   - Collapse/expand is UI-only and not persisted.
+>
+> - Revise Development Plan as “historical + current”:
+>   - Keep Stages 1-3 as prototype/learning stages.
+>   - Mark Stage 4 SQLite persistence as current implementation direction.
+>   - Add current UI stages for Markdown preview, grouped controls, move dropdown, and collapse/expand folders.
+>
+> - Expand Expected Behavior:
+>   - Document `server/utils/db.ts`, built-in `node:sqlite`, `DatabaseSync`, `data/file-explorer.sqlite`, and the `nodes` table.
+>   - Clarify `node-store.ts` is prototype/reference code, while `db.ts` is the active persistence layer.
+>   - Add UI behavior for grouped controls, move destinations, current-location disabled options, root destination, preview clearing, and collapse/expand.
+>
+> - Rewrite frontend flow details:
+>   - Replace stale `displayNodes` language with:
+>     ```ts
+>     allDisplayNodes
+>     visibleDisplayNodes
+>     collapsedFolderIds
+>     ```
+>   - State that `allDisplayNodes` powers selection lookup and move destinations, while `visibleDisplayNodes` powers the rendered tree.
+>   - Add collapse behavior: folders with children get toggles, files do not, collapsing hides descendants but keeps the folder row visible.
+>   - Document that collapsing a selected descendant clears selection and preview.
+>
+> - Update function/interface sections:
+>   - Add/adjust frontend helpers:
+>     ```ts
+>     flattenTree(nodes, depth, ancestorIds, collapsedIds)
+>     isFolderCollapsed(nodeId)
+>     expandFolder(folderId)
+>     toggleFolderCollapsed(node)
+>     loadMarkdownPreview(fileId)
+>     clearMarkdownPreview()
+>     handleMoveNodeClick()
+>     ```
+>   - Keep DB operations:
+>     ```ts
+>     ensureDatabase()
+>     seedDatabaseIfEmpty()
+>     loadNodes()
+>     insertFolder(parentId, name)
+>     updateNodeParent(nodeId, newParentId)
+>     ```
+>   - Note that DB operations reuse pure `createFolder(...)` and `moveNode(...)` for validation before persisting.
+>
+> ## Behavior Decisions To Lock
+>
+> - If a file is selected and the user clicks `+ Folder`, the folder is created at the root. Only selected folders act as create-folder parents.
+> - Move-to-root is represented in the frontend with a sentinel string and converted to `null` before calling the API.
+> - Move destinations are generated from the full tree, not the collapsed visible tree.
+> - Collapse state is not saved to SQLite.
+> - Creating or moving into a collapsed folder expands that folder so the result is visible.
+> - `node:sqlite` is the chosen SQLite approach; remove it from open questions.
+>
+> ## Checklist Updates
+>
+> - Add manual acceptance items for:
+>   - SQLite DB creation under `data/`.
+>   - initial seed happens once.
+>   - created folders persist after restart.
+>   - moved nodes persist after restart.
+>   - collapse hides descendants.
+>   - expand restores descendants.
+>   - collapsed folders still appear as valid move destinations.
+>   - collapsing a parent of the selected file clears preview.
+>   - creating/moving into a collapsed folder expands it.
+>
+> - Update Open Questions:
+>   - Remove resolved `node:sqlite` question.
+>   - Remove or reframe the “creating folder beneath a file” warning since the intended behavior is root creation when a file is selected.
+>   - Keep genuinely unresolved questions: duplicate names, unknown filename patterns, ID strategy, and sort-order policy.
+>
+> ## Verification
+>
+> - Edit only `specs/spec-file-explorer.md`.
+> - Read the file back after editing.
+> - Confirm no source code, README, or AI usage files are modified.
+> - No build or tests required for this docs-only update.
+>
+> Plan implementation
+>
+> Status: completed
+> # Plan: Catch Up `spec-file-explorer.md`
+>
+> ## Summary
+>
+> Revise only `specs/spec-file-explorer.md` so it reflects the current app: SQLite-backed persistence through `db.ts`, API routes using the DB layer, Markdown preview behavior, grouped move controls, and frontend-only folder collapse/expand. Preserve the current section structure and learning-stage narrative, but mark the app’s current architecture clearly.
+>
+> ## Key Spec Updates
+>
+> - Update MVP flow to describe the actual current path:
+>   - `GET /api/tree` loads SQLite rows through `db.ts`, calls `buildTree(nodes)`, and returns `TreeNode[]`.
+>   - `POST /api/folders` and `POST /api/move` update SQLite, reload rows, rebuild the tree, and return updated `TreeNode[]`.
+>   - `GET /api/markdown?fileId=...` looks up the virtual file node, then reads Markdown content from `files/`.
+>   - Collapse/expand is UI-only and not persisted.
+>
+> - Revise Development Plan as “historical + current”:
+>   - Keep Stages 1-3 as prototype/learning stages.
+>   - Mark Stage 4 SQLite persistence as current implementation direction.
+>   - Add current UI stages for Markdown preview, grouped controls, move dropdown, and collapse/expand folders.
+>
+> - Expand Expected Behavior:
+>   - Document `server/utils/db.ts`, built-in `node:sqlite`, `DatabaseSync`, `data/file-explorer.sqlite`, and the `nodes` table.
+>   - Clarify `node-store.ts` is prototype/reference code, while `db.ts` is the active persistence layer.
+>   - Add UI behavior for grouped controls, move destinations, current-location disabled options, root destination, preview clearing, and collapse/expand.
+>
+> - Rewrite frontend flow details:
+>   - Replace stale `displayNodes` language with:
+>     ```ts
+>     allDisplayNodes
+>     visibleDisplayNodes
+>     collapsedFolderIds
+>     ```
+>   - State that `allDisplayNodes` powers selection lookup and move destinations, while `visibleDisplayNodes` powers the rendered tree.
+>   - Add collapse behavior: folders with children get toggles, files do not, collapsing hides descendants but keeps the folder row visible.
+>   - Document that collapsing a selected descendant clears selection and preview.
+>
+> - Update function/interface sections:
+>   - Add/adjust frontend helpers:
+>     ```ts
+>     flattenTree(nodes, depth, ancestorIds, collapsedIds)
+>     isFolderCollapsed(nodeId)
+>     expandFolder(folderId)
+>     toggleFolderCollapsed(node)
+>     loadMarkdownPreview(fileId)
+>     clearMarkdownPreview()
+>     handleMoveNodeClick()
+>     ```
+>   - Keep DB operations:
+>     ```ts
+>     ensureDatabase()
+>     seedDatabaseIfEmpty()
+>     loadNodes()
+>     insertFolder(parentId, name)
+>     updateNodeParent(nodeId, newParentId)
+>     ```
+>   - Note that DB operations reuse pure `createFolder(...)` and `moveNode(...)` for validation before persisting.
+>
+> ## Behavior Decisions To Lock
+>
+> - If a file is selected and the user clicks `+ Folder`, the folder is created at the root. Only selected folders act as create-folder parents.
+> - Move-to-root is represented in the frontend with a sentinel string and converted to `null` before calling the API.
+> - Move destinations are generated from the full tree, not the collapsed visible tree.
+> - Collapse state is not saved to SQLite.
+> - Creating or moving into a collapsed folder expands that folder so the result is visible.
+> - `node:sqlite` is the chosen SQLite approach; remove it from open questions.
+>
+> ## Checklist Updates
+>
+> - Add manual acceptance items for:
+>   - SQLite DB creation under `data/`.
+>   - initial seed happens once.
+>   - created folders persist after restart.
+>   - moved nodes persist after restart.
+>   - collapse hides descendants.
+>   - expand restores descendants.
+>   - collapsed folders still appear as valid move destinations.
+>   - collapsing a parent of the selected file clears preview.
+>   - creating/moving into a collapsed folder expands it.
+>
+> - Update Open Questions:
+>   - Remove resolved `node:sqlite` question.
+>   - Remove or reframe the “creating folder beneath a file” warning since the intended behavior is root creation when a file is selected.
+>   - Keep genuinely unresolved questions: duplicate names, unknown filename patterns, ID strategy, and sort-order policy.
+>
+> ## Verification
+>
+> - Edit only `specs/spec-file-explorer.md`.
+> - Read the file back after editing.
+> - Confirm no source code, README, or AI usage files are modified.
+> - No build or tests required for this docs-only update.
+</details>
+
+> PLEASE IMPLEMENT THIS PLAN:
+> # Plan: Catch Up `spec-file-explorer.md`
+>
+> ## Summary
+>
+> Revise only `specs/spec-file-explorer.md` so it reflects the current app: SQLite-backed persistence through `db.ts`, API routes using the DB layer, Markdown preview behavior, grouped move controls, and frontend-only folder collapse/expand. Preserve the current section structure and learning-stage narrative, but mark the app’s current architecture clearly.
+>
+> ## Key Spec Updates
+>
+> - Update MVP flow to describe the actual current path:
+>   - `GET /api/tree` loads SQLite rows through `db.ts`, calls `buildTree(nodes)`, and returns `TreeNode[]`.
+>   - `POST /api/folders` and `POST /api/move` update SQLite, reload rows, rebuild the tree, and return updated `TreeNode[]`.
+>   - `GET /api/markdown?fileId=...` looks up the virtual file node, then reads Markdown content from `files/`.
+>   - Collapse/expand is UI-only and not persisted.
+>
+> - Revise Development Plan as “historical + current”:
+>   - Keep Stages 1-3 as prototype/learning stages.
+>   - Mark Stage 4 SQLite persistence as current implementation direction.
+>   - Add current UI stages for Markdown preview, grouped controls, move dropdown, and collapse/expand folders.
+>
+> - Expand Expected Behavior:
+>   - Document `server/utils/db.ts`, built-in `node:sqlite`, `DatabaseSync`, `data/file-explorer.sqlite`, and the `nodes` table.
+>   - Clarify `node-store.ts` is prototype/reference code, while `db.ts` is the active persistence layer.
+>   - Add UI behavior for grouped controls, move destinations, current-location disabled options, root destination, preview clearing, and collapse/expand.
+>
+> - Rewrite frontend flow details:
+>   - Replace stale `displayNodes` language with:
+>     ```ts
+>     allDisplayNodes
+>     visibleDisplayNodes
+>     collapsedFolderIds
+>     ```
+>   - State that `allDisplayNodes` powers selection lookup and move destinations, while `visibleDisplayNodes` powers the rendered tree.
+>   - Add collapse behavior: folders with children get toggles, files do not, collapsing hides descendants but keeps the folder row visible.
+>   - Document that collapsing a selected descendant clears selection and preview.
+>
+> - Update function/interface sections:
+>   - Add/adjust frontend helpers:
+>     ```ts
+>     flattenTree(nodes, depth, ancestorIds, collapsedIds)
+>     isFolderCollapsed(nodeId)
+>     expandFolder(folderId)
+>     toggleFolderCollapsed(node)
+>     loadMarkdownPreview(fileId)
+>     clearMarkdownPreview()
+>     handleMoveNodeClick()
+>     ```
+>   - Keep DB operations:
+>     ```ts
+>     ensureDatabase()
+>     seedDatabaseIfEmpty()
+>     loadNodes()
+>     insertFolder(parentId, name)
+>     updateNodeParent(nodeId, newParentId)
+>     ```
+>   - Note that DB operations reuse pure `createFolder(...)` and `moveNode(...)` for validation before persisting.
+>
+> ## Behavior Decisions To Lock
+>
+> - If a file is selected and the user clicks `+ Folder`, the folder is created at the root. Only selected folders act as create-folder parents.
+> - Move-to-root is represented in the frontend with a sentinel string and converted to `null` before calling the API.
+> - Move destinations are generated from the full tree, not the collapsed visible tree.
+> - Collapse state is not saved to SQLite.
+> - Creating or moving into a collapsed folder expands that folder so the result is visible.
+> - `node:sqlite` is the chosen SQLite approach; remove it from open questions.
+>
+> ## Checklist Updates
+>
+> - Add manual acceptance items for:
+>   - SQLite DB creation under `data/`.
+>   - initial seed happens once.
+>   - created folders persist after restart.
+>   - moved nodes persist after restart.
+>   - collapse hides descendants.
+>   - expand restores descendants.
+>   - collapsed folders still appear as valid move destinations.
+>   - collapsing a parent of the selected file clears preview.
+>   - creating/moving into a collapsed folder expands it.
+>
+> - Update Open Questions:
+>   - Remove resolved `node:sqlite` question.
+>   - Remove or reframe the “creating folder beneath a file” warning since the intended behavior is root creation when a file is selected.
+>   - Keep genuinely unresolved questions: duplicate names, unknown filename patterns, ID strategy, and sort-order policy.
+>
+> ## Verification
+>
+> - Edit only `specs/spec-file-explorer.md`.
+> - Read the file back after editing.
+> - Confirm no source code, README, or AI usage files are modified.
+> - No build or tests required for this docs-only update.
+
+<details><summary>17 previous messages</summary>
+
+> I’ll update only the spec and keep it aligned to the app as it now stands: SQLite is active through `db.ts`, `node-store.ts` is prototype history, and collapse state lives only in `app.vue`. I’ll do the required doc/code read first, then patch the spec and read it back.
+>
+> <details><summary>Ran 8 commands</summary>
+>
+> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
+> - Ran `Get-Content -Path specs\spec-file-explorer.md`
+> - Ran `Get-Content -Path README.md`
+> - Ran `Get-Content -Path server\utils\db.ts`
+> - Ran `Get-Content -Path AI_USAGE.md`
+> - Ran `Get-Content -Path server\api\folders.post.ts`
+> - Ran `Get-Content -Path server\api\tree.get.ts`
+> - Ran `Get-Content -Path app\app.vue`
+>
+> </details>
+>
+> I’m going to replace the spec content with a cleaned-up version that keeps the ten-section structure, but removes stale `displayNodes`/prototype wording where it no longer applies. It will still keep the learning-stage history, just with the current architecture clearly marked.
+>
+> <details><summary>Created a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+915 -0)
+>
+> </details>
+>
+> The spec rewrite is in place. I’m reading it back and checking git status/diff now to verify only the spec changed in this step and that the requested sections are present.
+>
+> <details><summary>Ran 4 commands</summary>
+>
+> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern "^## [0-9]\. |node:sqlite|allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|data/file-explorer.sqlite|node-store.ts|Open Questions|Manual Acceptance"`
+> - Ran `git status --short`
+> - Ran `Get-Content -Path specs\spec-file-explorer.md`
+> - Ran `git diff --stat -- specs\spec-file-explorer.md`
+>
+> </details>
+>
+> Context compaction
+>
+> Source: automatic
+> Status: completed
+>
+> I’ve got the spec rewrite applied; I’m just doing a tight readback now so we can confirm the document caught up cleanly without touching code.
+>
+> <details><summary>Ran 4 commands</summary>
+>
+> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern '^## '`
+> - Ran `git status --short`
+> - Ran ``rg "node:sqlite|DatabaseSync|data/file-explorer.sqlite|node-store.ts|allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|displayNodes|Should `node:sqlite`|creating a folder beneath a file" specs/spec-file-explorer.md``
+> - Ran `git diff --stat -- specs/spec-file-explorer.md`
+>
+> </details>
+>
+> The section order checks out. One verification command tripped over PowerShell’s backtick escaping, so I’m rerunning that as simpler pattern checks rather than treating it as a content problem.
+>
+> <details><summary>Ran 3 commands</summary>
+>
+> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern '^### '`
+> - Ran `rg "node:sqlite|DatabaseSync|data/file-explorer.sqlite|node-store.ts|allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|displayNodes|creating a folder beneath a file" specs/spec-file-explorer.md`
+> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern 'GET /api/tree','POST /api/folders','POST /api/move','GET /api/markdown','collapse','Move-to-root','current location'`
+>
+> </details>
+>
+> The update is in place and the diff is docs-only. I spotted one wording that could be clearer: “allDisplayNodes ignores collapsed folders” really means it ignores collapse state, so I’m tightening that language in the spec before I call it done.
+>
+> <details><summary>Edited a file</summary>
+>
+> - Wrote `./specs/spec-file-explorer.md` (+1 -1)
+>
+> </details>
+>
+> That small wording patch is done. I’m doing one final narrow check for the updated terms and for any leftover old `displayNodes` reference as a standalone name.
+>
+> <details><summary>Ran 4 commands</summary>
+>
+> - Ran `rg '\bdisplayNodes\b' specs/spec-file-explorer.md`
+> - Ran `rg "allDisplayNodes ignores collapse state|visibleDisplayNodes respects|collapsedFolderIds|node:sqlite|data/file-explorer.sqlite|node-store.ts remains" specs/spec-file-explorer.md`
+> - Ran `git diff --stat -- specs/spec-file-explorer.md`
+> - Ran `git status --short`
+>
+> </details>
+>
+> The standalone old `displayNodes` name is gone. I’m checking one nearby excerpt now because one exact phrase didn’t show in the grep output, which usually means the wording is simply split or different than the pattern.
+>
+> <details><summary>Ran a command</summary>
+>
+> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern 'allDisplayNodes' -Context 1,1`
+>
+> </details>
+</details>
+
+Updated [spec-file-explorer.md](<./specs/spec-file-explorer.md>) to catch up with the current app.
+
+It now covers SQLite-backed persistence through `db.ts`, `node:sqlite` / `DatabaseSync`, the active API flow, Markdown preview behavior, grouped move controls, and frontend-only collapse/expand state. I also updated the development plan, frontend helper/state descriptions, validation rules, manual checklist, and open questions so resolved items like the SQLite choice are no longer treated as open.
+
+Verification done: read back section headings and key updated passages, confirmed no standalone stale `displayNodes` reference remains, and did not edit source code, README, or AI usage files. No build/tests run since this was docs-only.
