@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frontend Flow Explorer V2</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --panel-soft: #f0f4f8;
+      --border: #d7dee8;
+      --text: #172033;
+      --muted: #5e6878;
+      --accent: #1f6feb;
+      --accent-soft: #dbeafe;
+      --green: #dcfce7;
+      --yellow: #fef3c7;
+      --red: #fee2e2;
+      --purple: #f3e8ff;
+      --code: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      background: var(--bg);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--code);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
+      background: #eef2f7;
+    }
+
+    .page {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 18px;
+      border-right: 1px solid var(--border);
+      overflow: auto;
+      background: var(--panel);
+    }
+
+    .sidebar h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .sidebar p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .flow-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .flow-option {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      background: #ffffff;
+    }
+
+    .flow-option:hover {
+      border-color: #9fb0c8;
+      background: #f8fafc;
+    }
+
+    .flow-option.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .flow-option input {
+      margin-top: 3px;
+    }
+
+    .flow-name {
+      display: block;
+      font-weight: 700;
+    }
+
+    .flow-help {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .button-row button {
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      background: #ffffff;
+    }
+
+    .button-row button:hover {
+      background: #f8fafc;
+    }
+
+    .content {
+      padding: 24px;
+    }
+
+    .intro {
+      margin-bottom: 18px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .intro h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .intro p {
+      max-width: 980px;
+      margin: 0 0 8px;
+      color: var(--muted);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .summary-card h3 {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .summary-card p {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fbfcfe;
+    }
+
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .panel-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .graph-grid {
+      display: grid;
+      grid-template-columns: minmax(160px, 0.7fr) minmax(0, 1.3fr);
+      gap: 14px;
+    }
+
+    .graph-column h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .node-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .flow-node,
+    .dependency-node {
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .flow-node.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .flow-node.dimmed,
+    .dependency-node.dimmed {
+      opacity: 0.45;
+    }
+
+    .dependency-node {
+      cursor: pointer;
+    }
+
+    .dependency-node:hover {
+      border-color: #9fb0c8;
+      background: #f8fafc;
+    }
+
+    .dependency-node.focused {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .dependency-node.shared-all {
+      border-color: #16a34a;
+      background: var(--green);
+    }
+
+    .dependency-node.shared-some {
+      border-color: #d97706;
+      background: var(--yellow);
+    }
+
+    .dependency-node.unique {
+      border-color: #9333ea;
+      background: var(--purple);
+    }
+
+    .node-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 700;
+    }
+
+    .node-meta {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      color: #0f3b7a;
+      font-size: 12px;
+      font-weight: 700;
+      background: #e0ecff;
+    }
+
+    .analysis-section + .analysis-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .analysis-section h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 7px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      font-size: 12px;
+      background: #ffffff;
+    }
+
+    .chip.state {
+      background: #eff6ff;
+    }
+
+    .chip.computed {
+      background: var(--green);
+    }
+
+    .chip.handler {
+      background: var(--yellow);
+    }
+
+    .chip.api {
+      background: var(--red);
+    }
+
+    .chip.render {
+      background: var(--purple);
+    }
+
+    .chip.other {
+      background: #eef2f7;
+    }
+
+    .matrix-wrap {
+      margin-top: 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: auto;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      min-width: 860px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #fbfcfe;
+    }
+
+    td.matrix-cell,
+    th.flow-heading {
+      width: 84px;
+      text-align: center;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tr.row-active {
+      background: #f8fbff;
+    }
+
+    tr.row-focused {
+      background: var(--accent-soft);
+    }
+
+    .mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      color: #0f3b7a;
+      font-weight: 700;
+      background: #dbeafe;
+    }
+
+    .empty {
+      color: #a1aab8;
+    }
+
+    @media (max-width: 1050px) {
+      .page,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .summary-grid,
+      .graph-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <h1>Frontend Flow Explorer V2</h1>
+      <p>Select flows to see which state, computed values, handlers, APIs, and render regions they share.</p>
+
+      <div class="flow-controls" id="flowControls"></div>
+
+      <div class="button-row">
+        <button type="button" id="selectAllButton">Select all</button>
+        <button type="button" id="clearButton">Clear</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="intro">
+        <h2>Dependency Overlap View</h2>
+        <p>
+          This version treats every frontend flow as a node connected to dependencies.
+          Select one or more flows to find collisions before refactoring <code>app.vue</code>.
+        </p>
+        <p>
+          Read the result as a component-planning map: shared dependencies probably stay high up
+          or move into a composable; isolated dependencies are better candidates for component extraction.
+        </p>
+      </section>
+
+      <section class="summary-grid" aria-label="Selected flow summary">
+        <div class="summary-card">
+          <h3>Selected Flows</h3>
+          <p id="selectedFlowCount">0</p>
+        </div>
+        <div class="summary-card">
+          <h3>Shared By All</h3>
+          <p id="sharedAllCount">0</p>
+        </div>
+        <div class="summary-card">
+          <h3>Shared By Some</h3>
+          <p id="sharedSomeCount">0</p>
+        </div>
+        <div class="summary-card">
+          <h3>Unique In Selection</h3>
+          <p id="uniqueCount">0</p>
+        </div>
+      </section>
+
+      <div class="workspace">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Flow And Dependency Graph</h2>
+            <p>Dependency cards brighten when selected flows touch them. Click a dependency card to focus its matrix row.</p>
+          </div>
+          <div class="panel-body">
+            <div class="graph-grid">
+              <div class="graph-column">
+                <h3>Selected Flows</h3>
+                <div class="node-list" id="selectedFlowNodes"></div>
+              </div>
+
+              <div class="graph-column">
+                <h3>Dependency Nodes</h3>
+                <div class="node-list" id="dependencyNodes"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <div class="panel-header">
+            <h3>Refactor Signals</h3>
+            <p>Use this section to reason about component boundaries.</p>
+          </div>
+          <div class="panel-body">
+            <div class="analysis-section">
+              <h3>Shared By All Selected Flows</h3>
+              <div class="chip-list" id="sharedAllList"></div>
+            </div>
+
+            <div class="analysis-section">
+              <h3>Shared By Multiple Selected Flows</h3>
+              <div class="chip-list" id="sharedSomeList"></div>
+            </div>
+
+            <div class="analysis-section">
+              <h3>Unique To One Selected Flow</h3>
+              <div class="chip-list" id="uniqueList"></div>
+            </div>
+
+            <div class="analysis-section">
+              <h3>High-Coupling Dependencies Overall</h3>
+              <div class="chip-list" id="highCouplingList"></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <section class="matrix-wrap" aria-label="Dependency matrix">
+        <table>
+          <thead id="matrixHead"></thead>
+          <tbody id="matrixBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const flows = [
+      {
+        id: 'initial-load',
+        label: 'Initial Tree Load',
+        short: 'Load',
+        help: 'Hydrates tree.value from GET /api/tree.',
+        deps: [
+          'tree',
+          'pending',
+          'error',
+          'useFetch(/api/tree)',
+          'GET /api/tree',
+          'flattenTree',
+          'allDisplayNodes',
+          'visibleDisplayNodes',
+          'collapsedFolderIds',
+          'tree rows',
+          'left tree panel'
+        ]
+      },
+      {
+        id: 'select-node',
+        label: 'Select Node',
+        short: 'Select',
+        help: 'Updates selected row and branches to preview logic.',
+        deps: [
+          'visibleDisplayNodes',
+          'selectNode',
+          'selectedNodeId',
+          'selectedNodeType',
+          'moveDestinationValue',
+          'selected row highlight',
+          'selectedNode',
+          'allDisplayNodes',
+          'moveDestinations',
+          'canMoveSelectedNode',
+          'loadMarkdownPreview',
+          'clearMarkdownPreview',
+          'markdownPreview',
+          'previewPending',
+          'previewError',
+          'move controls',
+          'preview panel'
+        ]
+      },
+      {
+        id: 'preview-markdown',
+        label: 'Preview Markdown File',
+        short: 'Preview',
+        help: 'Loads raw Markdown for selected file nodes.',
+        deps: [
+          'selectNode',
+          'selectedNodeId',
+          'selectedNodeType',
+          'loadMarkdownPreview',
+          'clearMarkdownPreview',
+          'GET /api/markdown',
+          'markdownPreview',
+          'previewPending',
+          'previewError',
+          'stale preview guard',
+          'preview panel'
+        ]
+      },
+      {
+        id: 'create-folder',
+        label: 'Create Folder',
+        short: 'Create',
+        help: 'Creates a folder at root or inside selected folder.',
+        deps: [
+          'selectedNodeId',
+          'selectedNodeType',
+          'getCreateFolderParentId',
+          'handleCreateFolderClick',
+          'prompt',
+          'POST /api/folders',
+          'tree',
+          'expandFolder',
+          'collapsedFolderIds',
+          'tree rows',
+          'create folder button'
+        ]
+      },
+      {
+        id: 'move-node',
+        label: 'Move File Or Folder',
+        short: 'Move',
+        help: 'Moves selected node to root or valid folder destination.',
+        deps: [
+          'selectedNodeId',
+          'selectedNode',
+          'allDisplayNodes',
+          'moveDestinations',
+          'moveDestinationValue',
+          'selectedMoveDestination',
+          'canMoveSelectedNode',
+          'ROOT_DESTINATION_VALUE',
+          'handleMoveNodeClick',
+          'POST /api/move',
+          'tree',
+          'expandFolder',
+          'collapsedFolderIds',
+          'move controls',
+          'tree rows'
+        ]
+      },
+      {
+        id: 'collapse-expand',
+        label: 'Collapse Or Expand Folder',
+        short: 'Collapse',
+        help: 'Hides and restores descendants with frontend-only state.',
+        deps: [
+          'collapsedFolderIds',
+          'visibleDisplayNodes',
+          'flattenTree',
+          'toggleFolderCollapsed',
+          'isFolderCollapsed',
+          'clearSelection',
+          'selectedNode',
+          'selectedNodeId',
+          'selectedNodeType',
+          'markdownPreview',
+          'previewPending',
+          'previewError',
+          'tree rows',
+          'collapse toggles',
+          'preview panel'
+        ]
+      }
+    ]
+
+    const dependencyMeta = {
+      tree: { category: 'state', note: 'Main TreeNode[] returned by APIs and replaced after mutations.' },
+      pending: { category: 'state', note: 'Initial tree request loading state.' },
+      error: { category: 'state', note: 'Initial tree request error state.' },
+      selectedNodeId: { category: 'state', note: 'Small source of truth for the selected row.' },
+      selectedNodeType: { category: 'state', note: 'Distinguishes file versus folder behavior.' },
+      moveDestinationValue: { category: 'state', note: 'String value currently selected in the move dropdown.' },
+      markdownPreview: { category: 'state', note: 'Loaded Markdown preview object or null.' },
+      previewPending: { category: 'state', note: 'Preview-specific loading state.' },
+      previewError: { category: 'state', note: 'Preview-specific error state.' },
+      collapsedFolderIds: { category: 'state', note: 'Frontend-only Set of collapsed folder ids.' },
+
+      allDisplayNodes: { category: 'computed', note: 'Full flattened tree; ignores collapse.' },
+      visibleDisplayNodes: { category: 'computed', note: 'Collapsed-aware flattened tree used for rendering.' },
+      selectedNode: { category: 'computed', note: 'Full selected DisplayNode found from allDisplayNodes.' },
+      moveDestinations: { category: 'computed', note: 'Valid destination options for move UI.' },
+      selectedMoveDestination: { category: 'computed', note: 'Move destination object matching the dropdown value.' },
+      canMoveSelectedNode: { category: 'computed', note: 'Controls whether Confirm Move is enabled.' },
+
+      'useFetch(/api/tree)': { category: 'handler', note: 'Nuxt data-fetching call used by the root component.' },
+      flattenTree: { category: 'handler', note: 'Transforms TreeNode[] into DisplayNode[] rows.' },
+      selectNode: { category: 'handler', note: 'Updates selection and starts or clears preview.' },
+      clearSelection: { category: 'handler', note: 'Clears selection, move destination, and preview.' },
+      getCreateFolderParentId: { category: 'handler', note: 'Maps selected folder to parentId, otherwise root.' },
+      handleCreateFolderClick: { category: 'handler', note: 'Prompts for name, calls create API, replaces tree.' },
+      handleMoveNodeClick: { category: 'handler', note: 'Calls move API and replaces tree.' },
+      loadMarkdownPreview: { category: 'handler', note: 'Calls preview API and applies stale response guard.' },
+      clearMarkdownPreview: { category: 'handler', note: 'Resets preview content, loading, and error state.' },
+      expandFolder: { category: 'handler', note: 'Removes destination folder from collapsedFolderIds.' },
+      toggleFolderCollapsed: { category: 'handler', note: 'Copies and reassigns collapse Set.' },
+      isFolderCollapsed: { category: 'handler', note: 'Reads collapse state for a folder row.' },
+      ROOT_DESTINATION_VALUE: { category: 'handler', note: 'Sentinel string converted to null for root moves.' },
+      prompt: { category: 'handler', note: 'Browser prompt used for the MVP folder name input.' },
+      'stale preview guard': { category: 'handler', note: 'Prevents old async preview responses from overwriting current selection.' },
+
+      'GET /api/tree': { category: 'api', note: 'Loads the current SQLite-backed tree.' },
+      'POST /api/folders': { category: 'api', note: 'Creates one virtual folder and returns the updated tree.' },
+      'POST /api/move': { category: 'api', note: 'Moves one node and returns the updated tree.' },
+      'GET /api/markdown': { category: 'api', note: 'Reads Markdown content for a selected file node.' },
+
+      'tree rows': { category: 'render', note: 'Left panel list rows rendered from visibleDisplayNodes.' },
+      'left tree panel': { category: 'render', note: 'Container for controls and rendered tree.' },
+      'selected row highlight': { category: 'render', note: 'CSS class based on selectedNodeId.' },
+      'move controls': { category: 'render', note: 'Destination select and Confirm Move button.' },
+      'preview panel': { category: 'render', note: 'Right-side Markdown preview region.' },
+      'collapse toggles': { category: 'render', note: 'Folder expand/collapse buttons.' },
+      'create folder button': { category: 'render', note: 'Action button in the left panel.' }
+    }
+
+    let selectedFlowIds = new Set(flows.map((flow) => flow.id))
+    let focusedDependency = null
+
+    function getAllDependencies() {
+      return Object.keys(dependencyMeta).sort((a, b) => {
+        const categoryCompare = dependencyMeta[a].category.localeCompare(dependencyMeta[b].category)
+        return categoryCompare || a.localeCompare(b)
+      })
+    }
+
+    function selectedFlows() {
+      return flows.filter((flow) => selectedFlowIds.has(flow.id))
+    }
+
+    function flowsForDependency(dep, flowList = flows) {
+      return flowList.filter((flow) => flow.deps.includes(dep))
+    }
+
+    function selectedFlowsForDependency(dep) {
+      return flowsForDependency(dep, selectedFlows())
+    }
+
+    function dependencyClass(dep) {
+      const selected = selectedFlows()
+      const count = selectedFlowsForDependency(dep).length
+
+      if (count === 0) {
+        return 'dimmed'
+      }
+
+      if (selected.length > 1 && count === selected.length) {
+        return 'shared-all'
+      }
+
+      if (count > 1) {
+        return 'shared-some'
+      }
+
+      return 'unique'
+    }
+
+    function makeChip(text, category) {
+      const chip = document.createElement('span')
+      chip.className = `chip ${category || 'other'}`
+      chip.textContent = text
+      return chip
+    }
+
+    function renderFlowControls() {
+      const controls = document.getElementById('flowControls')
+      controls.innerHTML = ''
+
+      for (const flow of flows) {
+        const label = document.createElement('label')
+        label.className = selectedFlowIds.has(flow.id) ? 'flow-option selected' : 'flow-option'
+
+        const checkbox = document.createElement('input')
+        checkbox.type = 'checkbox'
+        checkbox.checked = selectedFlowIds.has(flow.id)
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            selectedFlowIds.add(flow.id)
+          } else {
+            selectedFlowIds.delete(flow.id)
+          }
+          renderAll()
+        })
+
+        const text = document.createElement('span')
+        text.innerHTML = `<span class="flow-name">${flow.label}</span><span class="flow-help">${flow.help}</span>`
+
+        label.appendChild(checkbox)
+        label.appendChild(text)
+        controls.appendChild(label)
+      }
+    }
+
+    function renderSummary() {
+      const selected = selectedFlows()
+      const deps = getAllDependencies()
+      const sharedAll = deps.filter((dep) => selected.length > 1 && selectedFlowsForDependency(dep).length === selected.length)
+      const sharedSome = deps.filter((dep) => {
+        const count = selectedFlowsForDependency(dep).length
+        return count > 1 && count < selected.length
+      })
+      const unique = deps.filter((dep) => selectedFlowsForDependency(dep).length === 1)
+
+      document.getElementById('selectedFlowCount').textContent = String(selected.length)
+      document.getElementById('sharedAllCount').textContent = String(sharedAll.length)
+      document.getElementById('sharedSomeCount').textContent = String(sharedSome.length)
+      document.getElementById('uniqueCount').textContent = String(unique.length)
+    }
+
+    function renderGraph() {
+      const flowNodes = document.getElementById('selectedFlowNodes')
+      const depNodes = document.getElementById('dependencyNodes')
+      const selected = selectedFlows()
+      flowNodes.innerHTML = ''
+      depNodes.innerHTML = ''
+
+      for (const flow of flows) {
+        const node = document.createElement('div')
+        node.className = selectedFlowIds.has(flow.id) ? 'flow-node active' : 'flow-node dimmed'
+        node.innerHTML = `
+          <div class="node-title">
+            <span>${flow.label}</span>
+            <span class="badge">${flow.deps.length}</span>
+          </div>
+          <div class="node-meta">${flow.help}</div>
+        `
+        flowNodes.appendChild(node)
+      }
+
+      const sortedDeps = getAllDependencies().sort((a, b) => {
+        const countDiff = selectedFlowsForDependency(b).length - selectedFlowsForDependency(a).length
+        if (countDiff !== 0) {
+          return countDiff
+        }
+        return a.localeCompare(b)
+      })
+
+      for (const dep of sortedDeps) {
+        const meta = dependencyMeta[dep]
+        const selectedCount = selectedFlowsForDependency(dep).length
+        const node = document.createElement('button')
+        node.type = 'button'
+        node.className = `dependency-node ${dependencyClass(dep)}${focusedDependency === dep ? ' focused' : ''}`
+        node.addEventListener('click', () => {
+          focusedDependency = focusedDependency === dep ? null : dep
+          renderAll()
+        })
+        node.innerHTML = `
+          <div class="node-title">
+            <span>${dep}</span>
+            <span class="badge">${selectedCount}/${selected.length}</span>
+          </div>
+          <div class="node-meta">${meta.category}: ${meta.note}</div>
+        `
+        depNodes.appendChild(node)
+      }
+    }
+
+    function fillChipList(id, deps) {
+      const list = document.getElementById(id)
+      list.innerHTML = ''
+
+      if (deps.length === 0) {
+        list.appendChild(makeChip('none', 'other'))
+        return
+      }
+
+      for (const dep of deps) {
+        list.appendChild(makeChip(dep, dependencyMeta[dep].category))
+      }
+    }
+
+    function renderAnalysis() {
+      const selected = selectedFlows()
+      const deps = getAllDependencies()
+
+      const sharedAll = deps.filter((dep) => selected.length > 1 && selectedFlowsForDependency(dep).length === selected.length)
+      const sharedSome = deps.filter((dep) => {
+        const count = selectedFlowsForDependency(dep).length
+        return count > 1 && count < selected.length
+      })
+      const unique = deps.filter((dep) => selectedFlowsForDependency(dep).length === 1)
+      const highCoupling = deps.filter((dep) => flowsForDependency(dep).length >= 3)
+
+      fillChipList('sharedAllList', sharedAll)
+      fillChipList('sharedSomeList', sharedSome)
+      fillChipList('uniqueList', unique)
+      fillChipList('highCouplingList', highCoupling)
+    }
+
+    function renderMatrix() {
+      const head = document.getElementById('matrixHead')
+      const body = document.getElementById('matrixBody')
+      const deps = getAllDependencies()
+      head.innerHTML = ''
+      body.innerHTML = ''
+
+      const headerRow = document.createElement('tr')
+      headerRow.innerHTML = '<th>Dependency</th><th>Category</th><th>Selected Count</th>'
+
+      for (const flow of flows) {
+        const th = document.createElement('th')
+        th.className = 'flow-heading'
+        th.textContent = flow.short
+        if (selectedFlowIds.has(flow.id)) {
+          th.style.background = '#93c5fd'
+        }
+        headerRow.appendChild(th)
+      }
+
+      head.appendChild(headerRow)
+
+      for (const dep of deps) {
+        const selectedCount = selectedFlowsForDependency(dep).length
+        const row = document.createElement('tr')
+        row.className = `${selectedCount > 0 ? 'row-active' : ''} ${focusedDependency === dep ? 'row-focused' : ''}`.trim()
+
+        const depCell = document.createElement('td')
+        depCell.innerHTML = `<strong>${dep}</strong><div class="node-meta">${dependencyMeta[dep].note}</div>`
+
+        const categoryCell = document.createElement('td')
+        categoryCell.appendChild(makeChip(dependencyMeta[dep].category, dependencyMeta[dep].category))
+
+        const countCell = document.createElement('td')
+        countCell.textContent = String(selectedCount)
+
+        row.appendChild(depCell)
+        row.appendChild(categoryCell)
+        row.appendChild(countCell)
+
+        for (const flow of flows) {
+          const cell = document.createElement('td')
+          cell.className = 'matrix-cell'
+          const isUsed = flow.deps.includes(dep)
+          const isSelectedColumn = selectedFlowIds.has(flow.id)
+
+          if (isUsed) {
+            cell.innerHTML = '<span class="mark">x</span>'
+          } else {
+            cell.innerHTML = '<span class="empty">-</span>'
+          }
+
+          if (isSelectedColumn) {
+            cell.style.background = isUsed ? '#bfdbfe' : '#e0f2fe'
+          }
+
+          row.appendChild(cell)
+        }
+
+        body.appendChild(row)
+      }
+    }
+
+    function renderAll() {
+      renderFlowControls()
+      renderSummary()
+      renderGraph()
+      renderAnalysis()
+      renderMatrix()
+    }
+
+    document.getElementById('selectAllButton').addEventListener('click', () => {
+      selectedFlowIds = new Set(flows.map((flow) => flow.id))
+      renderAll()
+    })
+
+    document.getElementById('clearButton').addEventListener('click', () => {
+      selectedFlowIds = new Set()
+      focusedDependency = null
+      renderAll()
+    })
+
+    renderAll()
+  </script>
+</body>
+</html>
