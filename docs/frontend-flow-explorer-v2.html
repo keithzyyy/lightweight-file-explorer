@@ -915,7 +915,21 @@
     function renderMatrix() {
       const head = document.getElementById('matrixHead')
       const body = document.getElementById('matrixBody')
-      const deps = getAllDependencies()
+      const deps = getAllDependencies().sort((a, b) => {
+        const selectedCountDiff = selectedFlowsForDependency(b).length - selectedFlowsForDependency(a).length
+
+        if (selectedCountDiff !== 0) {
+          return selectedCountDiff
+        }
+
+        const categoryDiff = dependencyMeta[a].category.localeCompare(dependencyMeta[b].category)
+
+        if (categoryDiff !== 0) {
+          return categoryDiff
+        }
+
+        return a.localeCompare(b)
+      })
       head.innerHTML = ''
       body.innerHTML = ''
 
