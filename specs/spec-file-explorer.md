@@ -488,6 +488,14 @@ createFolder(nodes, parentId, name)  moveNode(nodes, nodeId, newParentId)
               TreeNode[]
 ```
 
+
+### Frontend component structure
+Component structure:
+- `app/app.vue` owns shared frontend state, computed values, and API-calling handlers.
+- `app/components/TreePanel.vue` renders the left file explorer panel and emits user actions upward.
+- `app/components/MarkdownPreviewPanel.vue` renders Markdown preview state.
+- Shared state such as `selectedNodeId`, `tree`, `moveDestinationValue`, and preview state remains owned by `app.vue` for now.
+
 ### Frontend Rendering Flow
 
 Initial tree render:
