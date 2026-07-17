@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frontend Flow Explorer</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --panel-muted: #f0f3f7;
+      --border: #d8dee8;
+      --text: #172033;
+      --muted: #5b6575;
+      --accent: #1f6feb;
+      --accent-soft: #dbeafe;
+      --danger-soft: #fee2e2;
+      --ok-soft: #dcfce7;
+      --warn-soft: #fef3c7;
+      --code: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+      background: var(--bg);
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .page-shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 18px;
+      border-right: 1px solid var(--border);
+      overflow: auto;
+      background: var(--panel);
+    }
+
+    .sidebar h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .sidebar p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .flow-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .flow-tab {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      background: var(--panel);
+    }
+
+    .flow-tab:hover {
+      border-color: #9fb0c8;
+      background: #f8fafc;
+    }
+
+    .flow-tab.active {
+      border-color: var(--accent);
+      color: #0f3b7a;
+      font-weight: 700;
+      background: var(--accent-soft);
+    }
+
+    .content {
+      padding: 24px;
+    }
+
+    .intro {
+      max-width: 980px;
+      margin-bottom: 18px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .intro h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .intro p {
+      margin: 0 0 8px;
+      color: var(--muted);
+    }
+
+    .intro code,
+    .code-pill {
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--code);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
+      background: #eef2f7;
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fbfcfe;
+    }
+
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .panel-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .flow-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .summary-item {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel-muted);
+    }
+
+    .summary-label {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      color: #0f3b7a;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--accent-soft);
+    }
+
+    .step h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    .step p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 7px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      background: #ffffff;
+    }
+
+    .chip.read {
+      background: #eff6ff;
+    }
+
+    .chip.write {
+      background: var(--ok-soft);
+    }
+
+    .chip.api {
+      background: var(--warn-soft);
+    }
+
+    .chip.render {
+      background: #f3e8ff;
+    }
+
+    .chip.guard {
+      background: var(--danger-soft);
+    }
+
+    .side-section + .side-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .side-section h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .side-section ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .side-section li {
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .dependency-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .dependency-list .chip {
+      border-radius: 5px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    .boundary {
+      padding: 12px;
+      border-radius: 6px;
+      background: var(--panel-muted);
+    }
+
+    .boundary h4 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+
+    .boundary p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 16px;
+    }
+
+    .legend .chip {
+      justify-content: center;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 920px) {
+      .page-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .layout-grid,
+      .flow-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="sidebar">
+      <h1>Frontend Flow Explorer</h1>
+      <p>Use this to reason about refactoring <span class="code-pill">app.vue</span> into logical components.</p>
+
+      <nav class="flow-nav" aria-label="Frontend flows" id="flowNav"></nav>
+
+      <div class="legend" aria-label="Chip legend">
+        <span class="chip read">reads</span>
+        <span class="chip write">writes</span>
+        <span class="chip api">API</span>
+        <span class="chip render">renders</span>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="intro">
+        <h2>Refactor Planning View</h2>
+        <p>
+          This page maps user flows to the reactive state, computed values, handlers,
+          API routes, and rendered regions currently living in <code>app/app.vue</code>.
+        </p>
+        <p>
+          The goal is to answer: if this piece becomes a component, what state and handlers
+          must cross the boundary?
+        </p>
+      </section>
+
+      <div class="layout-grid">
+        <section class="panel" aria-labelledby="flowTitle">
+          <div class="panel-header">
+            <h2 id="flowTitle"></h2>
+            <p id="flowPurpose"></p>
+          </div>
+          <div class="panel-body">
+            <div class="flow-summary" id="flowSummary"></div>
+            <div class="steps" id="flowSteps"></div>
+          </div>
+        </section>
+
+        <aside class="panel" aria-labelledby="boundaryTitle">
+          <div class="panel-header">
+            <h3 id="boundaryTitle">Component Boundary Notes</h3>
+            <p>Signals for future extraction from the current single-file component.</p>
+          </div>
+          <div class="panel-body">
+            <div class="side-section">
+              <h3>Likely Component Or Composable</h3>
+              <div class="boundary">
+                <h4 id="componentCandidate"></h4>
+                <p id="componentReason"></p>
+              </div>
+            </div>
+
+            <div class="side-section">
+              <h3>Must Receive Or Own</h3>
+              <div class="dependency-list" id="needsList"></div>
+            </div>
+
+            <div class="side-section">
+              <h3>Should Not Need</h3>
+              <div class="dependency-list" id="notNeededList"></div>
+            </div>
+
+            <div class="side-section">
+              <h3>Cross-Boundary Concern</h3>
+              <ul id="concernList"></ul>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const flows = [
+      {
+        id: 'initial-load',
+        label: 'Initial Tree Load',
+        purpose: 'Baseline flow that hydrates the app and feeds all later rendering and interactions.',
+        summary: {
+          trigger: 'Page opens',
+          source: 'GET /api/tree',
+          mainState: 'tree',
+          renders: 'left tree panel'
+        },
+        steps: [
+          {
+            title: 'Nuxt page starts',
+            text: 'The root Vue component executes its setup code.',
+            reads: ['app/app.vue setup'],
+            writes: ['pending', 'error'],
+            api: [],
+            renders: []
+          },
+          {
+            title: 'Fetch tree from server',
+            text: 'useFetch calls the tree API route and waits for TreeNode[].',
+            reads: [],
+            writes: ['tree.value'],
+            api: ['GET /api/tree'],
+            renders: []
+          },
+          {
+            title: 'Compute display rows',
+            text: 'The nested tree is flattened into full rows and visible rows.',
+            reads: ['tree.value', 'collapsedFolderIds'],
+            writes: ['allDisplayNodes', 'visibleDisplayNodes'],
+            api: [],
+            renders: []
+          },
+          {
+            title: 'Render tree list',
+            text: 'The template loops over visibleDisplayNodes and renders one row per visible node.',
+            reads: ['visibleDisplayNodes'],
+            writes: [],
+            api: [],
+            renders: ['tree rows']
+          }
+        ],
+        component: {
+          name: 'TreePanel.vue plus useTreeDisplay()',
+          reason: 'Tree rendering depends on tree data and collapse state, while the server fetch may stay in the app shell.'
+        },
+        needs: ['tree', 'pending', 'error', 'visibleDisplayNodes', 'selectNode', 'toggleFolderCollapsed'],
+        notNeeded: ['markdownPreview', 'previewPending', 'previewError'],
+        concerns: [
+          'The tree panel should not own persistence; it should render data and emit user intent.',
+          'The parent app likely remains the owner of tree.value because create and move both replace it.'
+        ]
+      },
+      {
+        id: 'select-node',
+        label: 'Select Node',
+        purpose: 'Central interaction that drives row highlighting, create-folder destination, move controls, and preview behavior.',
+        summary: {
+          trigger: 'User clicks a tree row',
+          source: 'visibleDisplayNodes row',
+          mainState: 'selectedNodeId and selectedNodeType',
+          renders: 'selected row, move controls, preview state'
+        },
+        steps: [
+          {
+            title: 'Click visible row',
+            text: 'The li click handler receives the DisplayNode from the rendered row.',
+            reads: ['visibleDisplayNodes'],
+            writes: [],
+            api: [],
+            renders: []
+          },
+          {
+            title: 'Run selectNode(node)',
+            text: 'Selection source-of-truth is updated from the clicked node.',
+            reads: ['node.id', 'node.type'],
+            writes: ['selectedNodeId', 'selectedNodeType', 'moveDestinationValue'],
+            api: [],
+            renders: ['selected CSS class']
+          },
+          {
+            title: 'Branch by node type',
+            text: 'Files trigger preview loading; folders clear any existing preview.',
+            reads: ['selectedNodeType'],
+            writes: ['markdownPreview', 'previewPending', 'previewError'],
+            api: ['GET /api/markdown for files'],
+            renders: ['preview panel']
+          },
+          {
+            title: 'Recompute selected node context',
+            text: 'Computed values use the selected id and full tree rows to derive action state.',
+            reads: ['selectedNodeId', 'allDisplayNodes'],
+            writes: ['selectedNode', 'moveDestinations', 'canMoveSelectedNode'],
+            api: [],
+            renders: ['move destination dropdown', 'Confirm Move button']
+          }
+        ],
+        component: {
+          name: 'Selection state probably stays in App.vue or a composable',
+          reason: 'Selection is shared by tree highlighting, create folder, move controls, and preview loading.'
+        },
+        needs: ['selectedNodeId', 'selectedNodeType', 'selectNode', 'clearSelection'],
+        notNeeded: ['Database details', 'readMarkdownFileNames', 'organizeInitialFiles'],
+        concerns: [
+          'If TreePanel owns selection internally, MoveControls and PreviewPanel would need awkward synchronization.',
+          'A useSelection() composable could centralize selectedNodeId, selectedNodeType, selectedNode, selectNode, and clearSelection.'
+        ]
+      },
+      {
+        id: 'preview-markdown',
+        label: 'Preview Markdown File',
+        purpose: 'File-only flow that loads raw Markdown text into the right preview panel.',
+        summary: {
+          trigger: 'User selects a file',
+          source: 'GET /api/markdown?fileId=...',
+          mainState: 'markdownPreview',
+          renders: 'preview panel'
+        },
+        steps: [
+          {
+            title: 'File row selected',
+            text: 'selectNode sees node.type is file and starts preview loading.',
+            reads: ['node.id', 'node.type'],
+            writes: ['previewPending', 'previewError', 'markdownPreview'],
+            api: [],
+            renders: ['Loading preview...']
+          },
+          {
+            title: 'Call preview API',
+            text: 'loadMarkdownPreview calls the Markdown endpoint with the selected file id.',
+            reads: ['fileId'],
+            writes: [],
+            api: ['GET /api/markdown?fileId=<node-id>'],
+            renders: []
+          },
+          {
+            title: 'Apply race guard',
+            text: 'The response is only applied if the same file is still selected.',
+            reads: ['selectedNodeId', 'selectedNodeType'],
+            writes: ['markdownPreview', 'previewPending', 'previewError'],
+            api: [],
+            renders: ['preview document'],
+            guards: ['stale async response guard']
+          },
+          {
+            title: 'Clear on folder or empty panel',
+            text: 'Selecting a folder or clearing selection removes the preview.',
+            reads: ['selectedNodeType'],
+            writes: ['markdownPreview', 'previewPending', 'previewError'],
+            api: [],
+            renders: ['empty preview message']
+          }
+        ],
+        component: {
+          name: 'MarkdownPreviewPanel.vue plus useMarkdownPreview()',
+          reason: 'Preview has a clear loading, error, content state group and does not need move or collapse internals.'
+        },
+        needs: ['markdownPreview', 'previewPending', 'previewError', 'loadMarkdownPreview', 'clearMarkdownPreview'],
+        notNeeded: ['moveDestinationValue', 'moveDestinations', 'collapsedFolderIds'],
+        concerns: [
+          'The race guard depends on current selection, so either the composable receives selectedNodeId/type or the parent controls when responses apply.',
+          'The preview panel can be presentational if the parent owns loading and fetch logic.'
+        ]
+      },
+      {
+        id: 'create-folder',
+        label: 'Create Folder',
+        purpose: 'Mutation flow that creates a virtual folder either at root or inside the selected folder.',
+        summary: {
+          trigger: 'User clicks + Folder',
+          source: 'POST /api/folders',
+          mainState: 'tree',
+          renders: 'updated tree rows'
+        },
+        steps: [
+          {
+            title: 'Click + Folder',
+            text: 'The action button calls handleCreateFolderClick without clearing selection.',
+            reads: [],
+            writes: [],
+            api: [],
+            renders: []
+          },
+          {
+            title: 'Resolve parent id',
+            text: 'getCreateFolderParentId returns the selected folder id, or null for root.',
+            reads: ['selectedNodeType', 'selectedNodeId'],
+            writes: [],
+            api: [],
+            renders: []
+          },
+          {
+            title: 'Create folder on server',
+            text: 'The API inserts one folder row through the SQLite-backed storage layer.',
+            reads: ['parentId', 'folderName'],
+            writes: [],
+            api: ['POST /api/folders'],
+            renders: []
+          },
+          {
+            title: 'Replace tree and reveal result',
+            text: 'The returned TreeNode[] replaces tree.value; the parent folder is expanded when needed.',
+            reads: ['parentId'],
+            writes: ['tree.value', 'collapsedFolderIds'],
+            api: [],
+            renders: ['tree rows']
+          }
+        ],
+        component: {
+          name: 'CreateFolderControl.vue or ExplorerActions.vue',
+          reason: 'The button is simple, but it depends on selection context and mutates the shared tree.'
+        },
+        needs: ['selectedNodeId', 'selectedNodeType', 'getCreateFolderParentId', 'handleCreateFolderClick', 'tree.value'],
+        notNeeded: ['markdownPreview content', 'moveDestinations'],
+        concerns: [
+          'A small control component could emit create-folder intent while App.vue performs the API call.',
+          'If the control owns prompting, it still needs the parent destination rule.'
+        ]
+      },
+      {
+        id: 'move-node',
+        label: 'Move File Or Folder',
+        purpose: 'Mutation flow that moves the selected node to root or a valid folder destination.',
+        summary: {
+          trigger: 'User clicks Confirm Move',
+          source: 'POST /api/move',
+          mainState: 'moveDestinationValue and tree',
+          renders: 'move controls and updated tree rows'
+        },
+        steps: [
+          {
+            title: 'Build destination options',
+            text: 'The dropdown is computed from allDisplayNodes, not the collapsed visible rows.',
+            reads: ['selectedNode', 'allDisplayNodes'],
+            writes: ['moveDestinations'],
+            api: [],
+            renders: ['Destination select']
+          },
+          {
+            title: 'Pick destination',
+            text: 'The select stores a string value; root uses a sentinel that later maps to null.',
+            reads: ['moveDestinations'],
+            writes: ['moveDestinationValue', 'selectedMoveDestination', 'canMoveSelectedNode'],
+            api: [],
+            renders: ['Confirm Move enabled/disabled']
+          },
+          {
+            title: 'Confirm move',
+            text: 'handleMoveNodeClick validates selected node and destination before calling the server.',
+            reads: ['selectedNodeId', 'selectedMoveDestination'],
+            writes: [],
+            api: ['POST /api/move'],
+            renders: []
+          },
+          {
+            title: 'Replace tree and expand destination',
+            text: 'The updated tree replaces tree.value and the destination folder is expanded.',
+            reads: ['destination.parentId'],
+            writes: ['tree.value', 'collapsedFolderIds', 'moveDestinationValue'],
+            api: [],
+            renders: ['tree rows', 'move dropdown']
+          }
+        ],
+        component: {
+          name: 'MoveControls.vue plus useMoveDestinations()',
+          reason: 'Move UI has its own derived state, but it depends on selection and the full tree.'
+        },
+        needs: ['selectedNode', 'allDisplayNodes', 'moveDestinationValue', 'moveDestinations', 'canMoveSelectedNode', 'handleMoveNodeClick'],
+        notNeeded: ['visibleDisplayNodes only', 'markdownPreview content'],
+        concerns: [
+          'MoveControls should derive options from the full flattened tree so collapsed folders remain valid destinations.',
+          'The backend remains the source of truth for invalid moves; frontend filtering is defensive UX.'
+        ]
+      },
+      {
+        id: 'collapse-expand',
+        label: 'Collapse Or Expand Folder',
+        purpose: 'Frontend-only flow that hides and shows descendants without changing persisted tree data.',
+        summary: {
+          trigger: 'User clicks folder toggle',
+          source: 'collapsedFolderIds',
+          mainState: 'visibleDisplayNodes',
+          renders: 'visible tree rows'
+        },
+        steps: [
+          {
+            title: 'Click folder toggle',
+            text: 'The toggle click is stopped so it does not also select the row.',
+            reads: ['node.id', 'node.type'],
+            writes: [],
+            api: [],
+            renders: []
+          },
+          {
+            title: 'Copy and update Set',
+            text: 'toggleFolderCollapsed copies the Set before reassigning it so Vue sees the change.',
+            reads: ['collapsedFolderIds'],
+            writes: ['collapsedFolderIds'],
+            api: [],
+            renders: []
+          },
+          {
+            title: 'Recompute visible rows',
+            text: 'visibleDisplayNodes reruns flattenTree with collapsed ids and hides descendants.',
+            reads: ['tree.value', 'collapsedFolderIds'],
+            writes: ['visibleDisplayNodes'],
+            api: [],
+            renders: ['tree rows']
+          },
+          {
+            title: 'Clear hidden selection if needed',
+            text: 'If the collapsed folder contains the selected descendant, selection and preview are cleared.',
+            reads: ['selectedNode.ancestorIds'],
+            writes: ['selectedNodeId', 'selectedNodeType', 'markdownPreview', 'previewPending', 'previewError'],
+            api: [],
+            renders: ['selected row state', 'preview panel']
+          }
+        ],
+        component: {
+          name: 'TreePanel.vue or useTreeCollapse()',
+          reason: 'Collapse is local tree-rendering state, but it may clear global selection and preview.'
+        },
+        needs: ['collapsedFolderIds', 'visibleDisplayNodes', 'toggleFolderCollapsed', 'clearSelection'],
+        notNeeded: ['Database writes', 'POST /api/move', 'POST /api/folders'],
+        concerns: [
+          'Collapse state should not be saved to SQLite in the current MVP.',
+          'TreePanel can own collapse state if it can notify the parent when hidden selection must be cleared.'
+        ]
+      }
+    ]
+
+    let activeFlowId = flows[0].id
+
+    function createChip(text, kind) {
+      const chip = document.createElement('span')
+      chip.className = `chip ${kind || ''}`.trim()
+      chip.textContent = text
+      return chip
+    }
+
+    function renderNav() {
+      const nav = document.getElementById('flowNav')
+      nav.innerHTML = ''
+
+      for (const flow of flows) {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = flow.id === activeFlowId ? 'flow-tab active' : 'flow-tab'
+        button.textContent = flow.label
+        button.addEventListener('click', () => {
+          activeFlowId = flow.id
+          renderPage()
+        })
+        nav.appendChild(button)
+      }
+    }
+
+    function renderSummary(flow) {
+      const summary = document.getElementById('flowSummary')
+      summary.innerHTML = ''
+
+      for (const [label, value] of Object.entries(flow.summary)) {
+        const item = document.createElement('div')
+        item.className = 'summary-item'
+        item.innerHTML = `
+          <p class="summary-label">${label}</p>
+          <p class="summary-value">${value}</p>
+        `
+        summary.appendChild(item)
+      }
+    }
+
+    function renderStepChips(container, label, values, kind) {
+      if (!values || values.length === 0) {
+        return
+      }
+
+      for (const value of values) {
+        container.appendChild(createChip(`${label}: ${value}`, kind))
+      }
+    }
+
+    function renderSteps(flow) {
+      const steps = document.getElementById('flowSteps')
+      steps.innerHTML = ''
+
+      flow.steps.forEach((step, index) => {
+        const article = document.createElement('article')
+        article.className = 'step'
+
+        const number = document.createElement('span')
+        number.className = 'step-number'
+        number.textContent = String(index + 1)
+
+        const body = document.createElement('div')
+        const heading = document.createElement('h3')
+        heading.textContent = step.title
+        const text = document.createElement('p')
+        text.textContent = step.text
+        const chips = document.createElement('div')
+        chips.className = 'chips'
+
+        renderStepChips(chips, 'reads', step.reads, 'read')
+        renderStepChips(chips, 'writes', step.writes, 'write')
+        renderStepChips(chips, 'api', step.api, 'api')
+        renderStepChips(chips, 'renders', step.renders, 'render')
+        renderStepChips(chips, 'guard', step.guards, 'guard')
+
+        body.appendChild(heading)
+        body.appendChild(text)
+        body.appendChild(chips)
+        article.appendChild(number)
+        article.appendChild(body)
+        steps.appendChild(article)
+      })
+    }
+
+    function renderBoundary(flow) {
+      document.getElementById('componentCandidate').textContent = flow.component.name
+      document.getElementById('componentReason').textContent = flow.component.reason
+
+      const needsList = document.getElementById('needsList')
+      const notNeededList = document.getElementById('notNeededList')
+      const concernList = document.getElementById('concernList')
+      needsList.innerHTML = ''
+      notNeededList.innerHTML = ''
+      concernList.innerHTML = ''
+
+      for (const item of flow.needs) {
+        needsList.appendChild(createChip(item))
+      }
+
+      for (const item of flow.notNeeded) {
+        notNeededList.appendChild(createChip(item))
+      }
+
+      for (const concern of flow.concerns) {
+        const li = document.createElement('li')
+        li.textContent = concern
+        concernList.appendChild(li)
+      }
+    }
+
+    function renderPage() {
+      const flow = flows.find((candidate) => candidate.id === activeFlowId) || flows[0]
+      document.getElementById('flowTitle').textContent = flow.label
+      document.getElementById('flowPurpose').textContent = flow.purpose
+      renderNav()
+      renderSummary(flow)
+      renderSteps(flow)
+      renderBoundary(flow)
+    }
+
+    renderPage()
+  </script>
+</body>
+</html>

@@ -466,109 +466,41 @@ function clearSelection() {
   clearMarkdownPreview()
 }
 
+/**
+ * Updates the move destination selected inside TreePanel.
+ *
+ * TreePanel renders the dropdown, but app.vue owns this state because it is
+ * reset by selection and move actions.
+ */
+function updateMoveDestinationValue(value: string): void {
+  moveDestinationValue.value = value
+}
+
 </script>
 
 <template>
   <main class="app-shell">
-    <aside class="tree-panel" @click="clearSelection">
-      <div class="tree-header" @click.stop>
-        <h1>File Explorer</h1>
-
-        <div class="tree-actions">
-          <div class="action-group">
-            <p class="action-heading">Actions</p>
-
-            <button type="button" @click.stop="handleCreateFolderClick">
-              + Folder
-            </button>
-          </div>
-
-          <div class="action-group">
-            <p class="action-heading">Move selected item</p>
-
-            <label class="control-label" for="move-destination">
-              Destination
-            </label>
-
-            <select
-              id="move-destination"
-              v-model="moveDestinationValue"
-              class="move-select"
-              :disabled="selectedNodeId === null"
-            >
-              <option
-                v-for="destination in moveDestinations"
-                :key="destination.value"
-                :value="destination.value"
-                :disabled="destination.disabled"
-              >
-                {{ destination.label }}
-              </option>
-            </select>
-
-            <button
-              type="button"
-              :disabled="!canMoveSelectedNode"
-              @click.stop="handleMoveNodeClick"
-            >
-              Confirm Move
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <p v-if="pending">Loading tree...</p>
-      <p v-else-if="error">Could not load file tree.</p>
-
-      <ul v-else class="tree-list">
-        <li
-          v-for="node in visibleDisplayNodes"
-          :key="node.id"
-          class="tree-row"
-          :class="{ selected: node.id === selectedNodeId }"
-          @click.stop="selectNode(node)"
-        >
-          <span class="tree-indent" aria-hidden="true">
-            <span
-              v-for="level in node.depth"
-              :key="`${node.id}-guide-${level}`"
-              class="tree-guide"
-              :class="{ elbow: level === node.depth }"
-            />
-          </span>
-          <button
-            v-if="node.type === 'folder' && node.children.length > 0"
-            type="button"
-            class="collapse-toggle"
-            :aria-label="isFolderCollapsed(node.id) ? `Expand ${node.name}` : `Collapse ${node.name}`"
-            :aria-expanded="!isFolderCollapsed(node.id)"
-            @click.stop="toggleFolderCollapsed(node)"
-          >
-            {{ isFolderCollapsed(node.id) ? '>' : 'v' }}
-          </button>
-          <span v-else class="collapse-spacer" aria-hidden="true" />
-          <span class="node-icon">
-            {{ node.type === 'folder' ? '📂' : '📄' }}
-          </span>
-          <span>{{ node.name }}</span>
-        </li>
-      </ul>
-
-    </aside>
-
-    <section class="preview-panel">
-      <h2>Preview</h2>
-
-      <p v-if="previewPending">Loading preview...</p>
-      <p v-else-if="previewError">{{ previewError }}</p>
-
-      <article v-else-if="markdownPreview" class="preview-document">
-        <h3>{{ markdownPreview.name }}</h3>
-        <pre class="preview-content">{{ markdownPreview.content }}</pre>
-      </article>
-
-      <p v-else>Select a Markdown file to preview its contents here.</p>
-    </section>
+    <TreePanel
+      :pending="pending"
+      :error="error"
+      :visible-display-nodes="visibleDisplayNodes"
+      :selected-node-id="selectedNodeId"
+      :move-destination-value="moveDestinationValue"
+      :move-destinations="moveDestinations"
+      :can-move-selected-node="canMoveSelectedNode"
+      :is-folder-collapsed="isFolderCollapsed"
+      @create-folder="handleCreateFolderClick"
+      @move-node="handleMoveNodeClick"
+      @select-node="selectNode"
+      @clear-selection="clearSelection"
+      @toggle-folder="toggleFolderCollapsed"
+      @update-move-destination-value="updateMoveDestinationValue"
+    />
+    <MarkdownPreviewPanel
+      :markdown-preview="markdownPreview"
+      :preview-pending="previewPending"
+      :preview-error="previewError"
+    />
   </main>
 </template>
 
@@ -578,185 +510,5 @@ function clearSelection() {
   grid-template-columns: 320px 1fr;
   min-height: 100vh;
   font-family: Arial, sans-serif;
-}
-
-.tree-panel {
-  border-right: 1px solid #ddd;
-  padding: 16px;
-  background: #f8f9fb;
-}
-
-.preview-panel {
-  padding: 24px;
-}
-
-.preview-document h3 {
-  margin-top: 0;
-}
-
-.preview-content {
-  padding: 16px;
-  border: 1px solid #d9dee8;
-  border-radius: 4px;
-  overflow: auto;
-  white-space: pre-wrap;
-  font-family: Consolas, "Courier New", monospace;
-  line-height: 1.5;
-  background: #fbfcfe;
-}
-
-.tree-list {
-  list-style: none;
-  padding: 0;
-  margin: 16px 0 0;
-}
-
-.tree-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
-  border-radius: 4px;
-}
-
-.tree-row:hover {
-  background: #e9eef5;
-}
-
-.collapse-toggle,
-.collapse-spacer {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.collapse-toggle {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #4b5563;
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-}
-
-.collapse-toggle:hover {
-  border-radius: 3px;
-  background: #dbeafe;
-}
-
-.node-icon {
-  width: 48px;
-  color: #666;
-  font-size: 12px;
-}
-
-.tree-indent {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-self: stretch;
-}
-
-.tree-guide {
-  position: relative;
-  width: 18px;
-  min-height: 20px;
-}
-
-.tree-guide::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  bottom: -6px;
-  left: 8px;
-  border-left: 1px solid #c6ced8;
-}
-
-.tree-guide.elbow::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 8px;
-  width: 10px;
-  border-top: 1px solid #c6ced8;
-}
-
-.tree-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.tree-header h1 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.tree-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: 100%;
-}
-
-.action-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  width: 100%;
-}
-
-.action-heading {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: #4b5563;
-}
-
-.control-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #4b5563;
-}
-
-.tree-actions button,
-.move-select {
-  font: inherit;
-  padding: 6px 8px;
-  border: 1px solid #c8d0dc;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.tree-actions button {
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.move-select {
-  width: 100%;
-  min-width: 0;
-}
-
-.tree-actions button:disabled,
-.move-select:disabled {
-  color: #7a8493;
-  background: #eef1f5;
-  cursor: not-allowed;
-}
-
-.tree-row {
-  cursor: pointer;
-}
-
-.tree-row.selected {
-  background: #dbeafe;
-  color: #123c69;
-  font-weight: 600;
 }
 </style>
