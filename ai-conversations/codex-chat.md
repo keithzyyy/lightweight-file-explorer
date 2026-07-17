@@ -7813,20 +7813,9 @@ Later, if you want to match the spec literally, we can switch to `server/api/mar
 
 > Yep I agree with the query parameter version (I will update the spec later mysefl). I agree with the flow and implementation -- validating file id, fetching file path from the nodes. Lets create the file in `server/api` and edit directly.
 
-<details><summary>8 previous messages</summary>
+<details><summary>5 previous messages</summary>
 
 > I’ll add only the new API route in `server/api` and keep it aligned with the query-param flow we just agreed on. First I’m doing the required quick read of the project docs/current route shape, then I’ll patch the file and build.
->
-> <details><summary>Ran 6 commands</summary>
->
-> - Ran `Get-Content -LiteralPath 'internship-file-explorer-take-home-task.md'`
-> - Ran `Get-ChildItem -LiteralPath 'server/api'`
-> - Ran `Get-Content -LiteralPath 'specs/spec-file-explorer.md'`
-> - Ran `Get-Content -LiteralPath 'server/utils/node-store.ts'`
-> - Ran `Get-Content -LiteralPath 'README.md'`
-> - Ran `Get-Content -LiteralPath 'AI_USAGE.md'`
->
-> </details>
 >
 > `server/api/markdown.get.ts` does not exist yet, so I’ll create that route now. I’ll keep the route intentionally small: request validation in the API file, node lookup through `loadNodes()`, and file reading through the stored `filePath`.
 >
@@ -7838,20 +7827,7 @@ Later, if you want to match the spec literally, we can switch to `server/api/mar
 >
 > The route file is created. I’m going to read it back and then run the Nuxt build so we catch any Nitro route/type issues before handing it back.
 >
-> <details><summary>Ran 2 commands</summary>
->
-> - Ran `Get-Content -LiteralPath 'server/api/markdown.get.ts'`
-> - Ran `git diff -- server/api/markdown.get.ts`
->
-> </details>
->
 > The file matches the agreed implementation. One small note: because it’s a newly added untracked file, `git diff -- path` doesn’t show it unless staged, but the readback confirms the contents. Running the build now.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `npm.cmd run build`
->
-> </details>
 </details>
 
 Created [markdown.get.ts](<./server/api/markdown.get.ts>).
@@ -7874,15 +7850,9 @@ Verification: `npm.cmd run build` passed. Nuxt still emits the existing sourcema
 
 > ok lets stay in brainstorm mode for now. In terms of previewing the md file, I was thinking that when a file node is clicked, the api endpoint is called directly, but when it is deselceted or a folder is chosen, then the preview disappears. What do we think about this based on current shape of [app.vue](app/app.vue)
 
-<details><summary>2 previous messages</summary>
+<details><summary>1 previous message</summary>
 
 > I’ll keep this read-only and reason from the actual `app.vue` shape. I’ll quickly inspect the current selection/preview code so the brainstorm stays concrete.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -LiteralPath 'app/app.vue'`
->
-> </details>
 </details>
 
 I think your proposed behavior fits the current `app.vue` shape very naturally.
@@ -8002,18 +7972,8 @@ For now I’d render raw Markdown text in `<pre>`, not convert Markdown to HTML 
 
 > alright implement these on [app.vue](app/app.vue) . Stay in plan mode. Feel free to ask clarifying questions.
 
-<details><summary>4 previous messages</summary>
+<details><summary>1 previous message</summary>
 
-> I’ll keep this in Plan Mode and avoid editing. I’m going to re-check the current `app.vue` plus the new markdown API route so the plan maps exactly to the code that exists now.
->
-> <details><summary>Ran 3 commands</summary>
->
-> - Ran `Get-Content -LiteralPath 'server/api/markdown.get.ts'`
-> - Ran `Get-Content -LiteralPath 'app/app.vue'`
-> - Ran `Select-String -LiteralPath 'specs/spec-file-explorer.md' -Pattern 'Preview markdown file' -Context 5,25`
->
-> </details>
->
 > Plan
 >
 > # Plan: Add Markdown Preview Behavior To `app.vue`
@@ -8108,103 +8068,9 @@ For now I’d render raw Markdown text in `<pre>`, not convert Markdown to HTML 
 > - `server/api/markdown.get.ts` already exists and returns `{ id, name, content }`.
 > - The endpoint uses the query-param route: `/api/markdown?fileId=<node-id>`.
 > - Preview is raw Markdown text for this MVP stage.
->
-> Plan implementation
->
-> Status: completed
-> # Plan: Add Markdown Preview Behavior To `app.vue`
->
-> ## Summary
->
-> Edit only `app/app.vue` so clicking a file node loads Markdown text from `GET /api/markdown?fileId=<node-id>` into the preview panel. Clicking a folder or empty tree-panel space clears the preview.
->
-> ## Key Changes
->
-> - Add preview response type:
->   ```ts
->   type MarkdownPreview = {
->     id: string
->     name: string
->     content: string
->   }
->   ```
->
-> - Add preview state near the existing selection state:
->   ```ts
->   const markdownPreview = ref<MarkdownPreview | null>(null)
->   const previewPending = ref(false)
->   const previewError = ref<string | null>(null)
->   ```
->
-> - Add two commented helpers:
->   ```ts
->   function clearMarkdownPreview(): void
->   async function loadMarkdownPreview(fileId: string): Promise<void>
->   ```
->   `loadMarkdownPreview()` will call:
->   ```ts
->   $fetch<MarkdownPreview>('/api/markdown', {
->     query: { fileId }
->   })
->   ```
->
-> - Add a small race guard in `loadMarkdownPreview()`:
->   - if the user clicks file A, then quickly clicks file B or a folder, only apply the response if `selectedNodeId.value === fileId` and `selectedNodeType.value === 'file'`.
->   - use the same guard before setting `previewError` or clearing `previewPending`.
->
-> - Update `selectNode(node)`:
->   - keep the current selection and move-dropdown behavior.
->   - if `node.type === 'file'`, call `loadMarkdownPreview(node.id)`.
->   - otherwise call `clearMarkdownPreview()`.
->
-> - Update `clearSelection()`:
->   - keep existing selection and move-dropdown reset behavior.
->   - also call `clearMarkdownPreview()`.
->
-> ## Template Changes
->
-> - Replace the current static preview placeholder with conditional preview states:
->   ```vue
->   <section class="preview-panel">
->     <h2>Preview</h2>
->
->     <p v-if="previewPending">Loading preview...</p>
->     <p v-else-if="previewError">{{ previewError }}</p>
->
->     <article v-else-if="markdownPreview" class="preview-document">
->       <h3>{{ markdownPreview.name }}</h3>
->       <pre class="preview-content">{{ markdownPreview.content }}</pre>
->     </article>
->
->     <p v-else>Select a Markdown file to preview its contents here.</p>
->   </section>
->   ```
->
-> - Keep raw Markdown rendering in `<pre>` for now; do not add a Markdown-to-HTML dependency yet.
->
-> ## CSS Changes
->
-> - Add light preview styling only:
->   - `.preview-document`
->   - `.preview-content`
-> - Preserve the existing tree layout, selected-row styling, and move controls.
->
-> ## Verification
->
-> - Run `npm.cmd run build`.
-> - Manually check:
->   - clicking a file loads its Markdown content.
->   - clicking a folder clears the preview.
->   - clicking empty tree panel clears the preview.
->   - clicking files quickly does not show stale content from the earlier click.
->   - preview errors display if the API fails.
->
-> ## Assumptions
->
-> - `server/api/markdown.get.ts` already exists and returns `{ id, name, content }`.
-> - The endpoint uses the query-param route: `/api/markdown?fileId=<node-id>`.
-> - Preview is raw Markdown text for this MVP stage.
 </details>
+
+I’ll keep this in Plan Mode and avoid editing. I’m going to re-check the current `app.vue` plus the new markdown API route so the plan maps exactly to the code that exists now.
 
 > PLEASE IMPLEMENT THIS PLAN:
 > # Plan: Add Markdown Preview Behavior To `app.vue`
@@ -8300,20 +8166,9 @@ For now I’d render raw Markdown text in `<pre>`, not convert Markdown to HTML 
 > - The endpoint uses the query-param route: `/api/markdown?fileId=<node-id>`.
 > - Preview is raw Markdown text for this MVP stage.
 
-<details><summary>10 previous messages</summary>
+<details><summary>6 previous messages</summary>
 
 > I’ll implement only the `app/app.vue` preview behavior from the plan. I’m doing the repo-required read pass first, then I’ll patch the Vue file and run the Nuxt build.
->
-> <details><summary>Ran 6 commands</summary>
->
-> - Ran `Get-Content -LiteralPath 'internship-file-explorer-take-home-task.md'`
-> - Ran `Get-Content -LiteralPath 'specs/spec-file-explorer.md'`
-> - Ran `Get-Content -LiteralPath 'AI_USAGE.md'`
-> - Ran `Get-Content -LiteralPath 'app/app.vue'`
-> - Ran `Get-Content -LiteralPath 'README.md'`
-> - Ran `Get-Content -LiteralPath 'server/api/markdown.get.ts'`
->
-> </details>
 >
 > I’m going to patch the preview state and handlers into the existing selection flow. The only behavioral change is that file selection now starts an async preview load, while folder/background selection clears it.
 >
@@ -8325,27 +8180,9 @@ For now I’d render raw Markdown text in `<pre>`, not convert Markdown to HTML 
 >
 > The patch is in. I’m reading `app.vue` back now to check the state flow and make sure the preview conditionals landed cleanly before building.
 >
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -LiteralPath 'app/app.vue'`
->
-> </details>
->
 > The preview flow looks coherent: `selectNode()` now routes file vs folder behavior, and `clearSelection()` clears preview too. I’m running the Nuxt build now to catch TypeScript/template issues.
 >
-> <details><summary>Ran a command</summary>
->
-> - Ran `npm.cmd run build`
->
-> </details>
->
 > Build passed. I’ll do one final diff check so the summary can be precise and we can spot any accidental changes outside the intended preview behavior.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `git diff -- app/app.vue`
->
-> </details>
 </details>
 
 Implemented the Markdown preview behavior in [app.vue](<./app/app.vue>).
@@ -8414,7 +8251,7 @@ Same idea applies to errors and loading state too: an old failed request should 
 
 > Context compaction
 >
-> Source: manual
+> Source: automatic
 > Status: completed
 </details>
 
@@ -8446,30 +8283,11 @@ Same idea applies to errors and loading state too: an old failed request should 
 >
 > From [server](server/) , [api](server/api/) , and the app [app.vue](app/app.vue) , let us brainstorm extensively before thinking about database persistence. Moreover , I am also thinking whether having "two versions of the app": in memory vs database persistence is feasible or not, or should we eventually overwrite [node-store.ts](server/utils/node-store.ts) with [db.ts](server/utils/db.ts) . Or I think for the in memory version we can stop here, and create a new git branch where we overwrite [node-store.ts](server/utils/node-store.ts) with [db.ts](server/utils/db.ts) .
 
-<details><summary>4 previous messages</summary>
+<details><summary>2 previous messages</summary>
 
 > I’ll stay read-only and ground this in the current app shape. I’m going to inspect the server/API files and `app.vue` so the persistence discussion maps to what you actually have, not an imaginary Nuxt app.
 >
-> <details><summary>Ran 8 commands</summary>
->
-> - Ran `Get-Content -Path server\api\move.post.ts`
-> - Ran `Get-Content -Path app\app.vue`
-> - Ran `Get-Content -Path server\api\folders.post.ts`
-> - Ran `Get-Content -Path server\utils\tree.ts`
-> - Ran `Get-Content -Path server\utils\node-store.ts`
-> - Ran `Get-Content -Path server\api\markdown.get.ts`
-> - Ran `Get-ChildItem -Path server -Recurse -File | Select-Object -ExpandProperty FullName`
-> - Ran `Get-Content -Path server\api\tree.get.ts`
->
-> </details>
->
 > One interesting detail: there is already a `server/utils/db.ts` file in the tree. I’ll read that too before giving the architecture answer, because it affects whether we’re talking about “create a new file” or “fill in an existing placeholder.”
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -Path server\utils\db.ts`
->
-> </details>
 </details>
 
 Yes, your mental model is basically right. The current `node-store.ts` is acting like a tiny fake database table held inside the Node/Nuxt server runtime.
@@ -8794,30 +8612,9 @@ So yes: implement `db.ts`, then update the imports in all four API routes, plus 
 
 > Alright the biggest heavy lifting needed is implementing [db.ts](server/utils/db.ts) so lets do that first. Stay on plan mode for now.
 
-<details><summary>6 previous messages</summary>
+<details><summary>2 previous messages</summary>
 
 > I’ll keep this in planning territory and first pin down the local constraints that matter for SQLite: current Node/Nuxt setup, whether a SQLite package already exists, and the exact storage contract `db.ts` needs to match.
->
-> <details><summary>Ran 8 commands</summary>
->
-> - Ran `Get-Content -Path tsconfig.json`
-> - Ran `Get-Content -Path server\utils\node-store.ts`
-> - Ran `Get-Content -Path specs\spec-file-explorer.md`
-> - Ran `Get-Content -Path server\utils\db.ts`
-> - Ran `Get-Content -Path server\utils\tree.ts`
-> - Ran `node --version`
-> - Ran `Get-Content -Path .gitignore`
-> - Ran `Get-Content -Path package.json`
->
-> </details>
->
-> The repo is already set up nicely for the swap: `db.ts` exists but is empty, `data/` is already gitignored, and local Node is `v24.18.0`, so the built-in `node:sqlite` path is viable without adding a dependency. I’m going to sanity-check the import shape before locking the plan.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `node -e "import('node:sqlite').then((m)=>console.log(Object.keys(m).join(',')))"`
->
-> </details>
 >
 > Plan
 >
@@ -8908,98 +8705,9 @@ So yes: implement `db.ts`, then update the imports in all four API routes, plus 
 > - Use synchronous SQLite APIs because the app is local MVP-scale and the code stays close to the current synchronous in-memory/store logic.
 > - Store the database at `data/file-explorer.sqlite`.
 > - Keep `node-store.ts` for now as the Stage 3 reference until the API routes are deliberately switched to `db.ts`.
->
-> Plan implementation
->
-> Status: completed
-> # Implement SQLite `db.ts`
->
-> ## Summary
->
-> Implement `server/utils/db.ts` as the Stage 4 storage layer equivalent of `node-store.ts`. It will use Node’s built-in `node:sqlite` with `DatabaseSync`, store the database under the already-gitignored `data/` directory, seed from `files/` only when empty, and expose the same storage-shaped functions as the current in-memory store.
->
-> ## Key Changes
->
-> - In `server/utils/db.ts`, add SQLite-backed exports:
->   ```ts
->   ensureDatabase(): void
->   seedDatabaseIfEmpty(): void
->   loadNodes(): ExplorerNode[]
->   insertFolder(parentId: string | null, name: string): ExplorerNode[]
->   updateNodeParent(nodeId: string, newParentId: string | null): ExplorerNode[]
->   ```
->
-> - Use this SQLite schema:
->   ```sql
->   CREATE TABLE IF NOT EXISTS nodes (
->     id TEXT PRIMARY KEY,
->     type TEXT NOT NULL CHECK (type IN ('folder', 'file')),
->     name TEXT NOT NULL,
->     parent_id TEXT,
->     file_path TEXT,
->     sort_order INTEGER NOT NULL,
->     FOREIGN KEY (parent_id) REFERENCES nodes(id)
->   )
->   ```
->
-> - Add small internal helpers, prefixed with `_`:
->   ```ts
->   _getDatabase(): DatabaseSync
->   _mapRowToExplorerNode(row): ExplorerNode
->   _insertNode(node: ExplorerNode): void
->   _findNewNode(beforeNodes, afterNodes): ExplorerNode
->   ```
->
-> - Reuse existing pure logic from `tree.ts`:
->   - `readMarkdownFileNames('files')`
->   - `organizeInitialFiles(fileNames)`
->   - `createFolder(nodes, parentId, name)`
->   - `moveNode(nodes, nodeId, newParentId)`
->
-> - Implement behavior:
->   - `ensureDatabase()` creates `data/` and the `nodes` table.
->   - `seedDatabaseIfEmpty()` checks `COUNT(*)`; if zero, inserts the deterministic initial hierarchy.
->   - `loadNodes()` calls `seedDatabaseIfEmpty()`, reads all rows, maps `parent_id` to `parentId` and `file_path` to `filePath`.
->   - `insertFolder()` loads current rows, calls pure `createFolder(...)`, inserts only the newly created folder row, then returns `loadNodes()`.
->   - `updateNodeParent()` loads current rows, calls pure `moveNode(...)` for validation and sort order, updates only the moved row, then returns `loadNodes()`.
->
-> ## Important Boundary
->
-> This step edits only `server/utils/db.ts`.
->
-> The API route import swap happens after this is implemented and verified:
->
-> ```ts
-> // later
-> import { loadNodes } from '../utils/db'
-> import { insertFolder } from '../utils/db'
-> import { updateNodeParent } from '../utils/db'
-> ```
->
-> Keeping this first step isolated makes it easier to confirm the DB layer compiles before changing app behavior.
->
-> ## Verification
->
-> - Run:
->   ```powershell
->   npm.cmd run build
->   ```
-> - Optionally run a small read-only smoke after implementation by importing the DB functions through the Nuxt build context or a temporary command if needed, but do not create extra repo files.
-> - Confirm:
->   - `data/` is used for the SQLite file and remains ignored.
->   - `loadNodes()` returns seeded rows on an empty DB.
->   - repeated `loadNodes()` calls do not duplicate seed rows.
->   - `insertFolder(null, 'Example')` persists a root folder.
->   - `updateNodeParent(nodeId, newParentId)` persists parent changes.
->   - original Markdown files in `files/` are not moved or rewritten.
->
-> ## Assumptions
->
-> - Use built-in `node:sqlite` because local Node is `v24.18.0` and no SQLite dependency is currently installed.
-> - Use synchronous SQLite APIs because the app is local MVP-scale and the code stays close to the current synchronous in-memory/store logic.
-> - Store the database at `data/file-explorer.sqlite`.
-> - Keep `node-store.ts` for now as the Stage 3 reference until the API routes are deliberately switched to `db.ts`.
 </details>
+
+The repo is already set up nicely for the swap: `db.ts` exists but is empty, `data/` is already gitignored, and local Node is `v24.18.0`, so the built-in `node:sqlite` path is viable without adding a dependency. I’m going to sanity-check the import shape before locking the plan.
 
 > PLEASE IMPLEMENT THIS PLAN:
 > # Implement SQLite `db.ts`
@@ -9090,22 +8798,9 @@ So yes: implement `db.ts`, then update the imports in all four API routes, plus 
 > - Store the database at `data/file-explorer.sqlite`.
 > - Keep `node-store.ts` for now as the Stage 3 reference until the API routes are deliberately switched to `db.ts`.
 
-<details><summary>13 previous messages</summary>
+<details><summary>8 previous messages</summary>
 
 > I’ll implement only `server/utils/db.ts` as planned and keep the API routes untouched. First I’m doing the required quick read of the project-facing docs so this change stays aligned with the repo rules and spec.
->
-> <details><summary>Ran 8 commands</summary>
->
-> - Ran `Get-Content -Path specs\spec-file-explorer.md`
-> - Ran `Get-Content -Path server\utils\node-store.ts`
-> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
-> - Ran `Get-Content -Path server\utils\db.ts`
-> - Ran `Get-Content -Path server\utils\tree.ts`
-> - Ran `Get-Content -Path README.md`
-> - Ran `Get-Content -Path package.json`
-> - Ran `Get-Content -Path AI_USAGE.md`
->
-> </details>
 >
 > I’ve got the shape now. The edit is self-contained: `db.ts` will own opening/creating the SQLite file, mapping snake_case rows to `ExplorerNode`, and delegating validation/id logic back to the pure functions in `tree.ts`.
 >
@@ -9119,36 +8814,11 @@ So yes: implement `db.ts`, then update the imports in all four API routes, plus 
 >
 > `db.ts` is now populated. I’ll read it back once, then run the Nuxt build so we catch TypeScript/module issues before we talk about swapping the API imports.
 >
-> <details><summary>Ran 2 commands</summary>
->
-> - Ran `npm.cmd run build`
-> - Ran `Get-Content -Path server\utils\db.ts`
->
-> </details>
->
 > Build passed, and it surfaced one useful Nuxt-specific wrinkle: because `node-store.ts` and `db.ts` now export the same function names, Nuxt’s auto-import scanner reports duplicate server utility exports. Explicit imports will still work, but we should keep that warning in mind for the route-swap step.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `node --experimental-strip-types -e "import('./server/utils/db.ts').then((m) => console.log(['ensureDatabase','seedDatabaseIfEmpty','loadNodes','insertFolder','updateNodeParent'].every((name) => typeof m[name] === 'function') ? 'db exports ok' : 'db exports missing'))"`
->
-> </details>
 >
 > The quick raw-Node import check tripped over a Nuxt/TypeScript detail: raw Node does not resolve the extensionless `./tree` import in a `.ts` file the way Nuxt does. That’s not an app build failure; the actual `npm.cmd run build` passed. I’ll do one final diff read so I can summarize exactly what changed.
 >
-> <details><summary>Ran a command</summary>
->
-> - Ran `git diff -- server\utils\db.ts`
->
-> </details>
->
 > The diff shows only `server/utils/db.ts` changed. One more quick status check will confirm I didn’t touch the API routes or docs while doing this first persistence-layer step.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `git status --short`
->
-> </details>
 </details>
 
 Implemented `server/utils/db.ts` as the SQLite-backed storage layer.
@@ -9176,20 +8846,9 @@ One note: `git status` also shows `ai-conversations/codex-chat.md` modified, but
 >
 >  WARN  "node:sqlite" is imported by "server/utils/db.ts", but could not be resolved – treating it as an external dependency.                   2:08:11 PM```
 
-<details><summary>2 previous messages</summary>
+<details><summary>1 previous message</summary>
 
 > I’ll inspect the changed API files first. The `node:sqlite` warning and the `Unterminated string literal` are probably two different things: one is Nuxt/Nitro bundling noise around a Node built-in, while the hard failure is almost certainly a typo in `folders.post.ts`.
->
-> <details><summary>Ran 6 commands</summary>
->
-> - Ran `Get-Content -Path server\api\markdown.get.ts`
-> - Ran `Get-Content -Path server\utils\db.ts`
-> - Ran `Get-Content -Path server\api\tree.get.ts`
-> - Ran `Get-Content -Path server\api\folders.post.ts`
-> - Ran `node --version`
-> - Ran `Get-Content -Path server\api\move.post.ts`
->
-> </details>
 </details>
 
 You do **not** install `node:sqlite`. It is a built-in Node module, and your `node --version` is `v24.18.0`, so it exists.
@@ -9305,16 +8964,8 @@ I would avoid making the heading too large. Something like `Move selected item` 
 > ```
 > "I would avoid making the heading too large" agreed
 
-<details><summary>4 previous messages</summary>
+<details><summary>1 previous message</summary>
 
-> I’ll keep this as a planning pass and inspect the current `app.vue` structure so the plan points to the exact template/CSS blocks that need changing.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -Path app\app.vue`
->
-> </details>
->
 > Plan
 >
 > # Plan: Reorganize Move Controls In `app.vue`
@@ -9440,134 +9091,9 @@ I would avoid making the heading too large. Something like `Move selected item` 
 > - This change is intentionally visual/structural only.
 > - The existing `Confirm Move` label stays.
 > - The heading text should stay small and quiet, not hero-sized.
->
-> Plan implementation
->
-> Status: completed
-> # Plan: Reorganize Move Controls In `app.vue`
->
-> ## Summary
->
-> Update only `app/app.vue` to make the upper-left controls read as two separate groups: folder creation first, then moving the selected item. This is a template/CSS change only; no TypeScript logic, API routes, or backend behavior should change.
->
-> ## Template Changes
->
-> Replace the current single flat `.tree-actions` block with two grouped sections:
->
-> ```vue
-> <div class="tree-actions">
->   <div class="action-group">
->     <p class="action-heading">Actions</p>
->
->     <button type="button" @click.stop="handleCreateFolderClick">
->       + Folder
->     </button>
->   </div>
->
->   <div class="action-group">
->     <p class="action-heading">Move selected item</p>
->
->     <label class="control-label" for="move-destination">
->       Destination
->     </label>
->
->     <select
->       id="move-destination"
->       v-model="moveDestinationValue"
->       class="move-select"
->       :disabled="selectedNodeId === null"
->     >
->       <option
->         v-for="destination in moveDestinations"
->         :key="destination.value"
->         :value="destination.value"
->         :disabled="destination.disabled"
->       >
->         {{ destination.label }}
->       </option>
->     </select>
->
->     <button
->       type="button"
->       :disabled="!canMoveSelectedNode"
->       @click.stop="handleMoveNodeClick"
->     >
->       Confirm Move
->     </button>
->   </div>
-> </div>
-> ```
->
-> Resulting visual structure:
->
-> ```text
-> File Explorer
->
-> Actions
-> [ + Folder ]
->
-> Move selected item
-> Destination
-> [ root                         v ]
-> [ Confirm Move ]
-> ```
->
-> ## CSS Changes
->
-> Adjust the existing control styles so the groups stack vertically:
->
-> ```css
-> .tree-actions {
->   display: flex;
->   flex-direction: column;
->   gap: 14px;
->   width: 100%;
-> }
->
-> .action-group {
->   display: flex;
->   flex-direction: column;
->   align-items: flex-start;
->   gap: 6px;
->   width: 100%;
-> }
->
-> .action-heading {
->   margin: 0;
->   font-size: 12px;
->   font-weight: 700;
->   color: #4b5563;
-> }
->
-> .control-label {
->   font-size: 12px;
->   font-weight: 600;
->   color: #4b5563;
-> }
->
-> .move-select {
->   width: 100%;
->   min-width: 0;
-> }
-> ```
->
-> Keep the existing button/select styling and disabled styling, but update selectors if needed so they still apply to buttons inside `.action-group`.
->
-> ## Test Plan
->
-> - Run `npm.cmd run build`.
-> - Manually check the left panel:
->   - `+ Folder` appears under `Actions`.
->   - Move dropdown appears under `Move selected item` and `Destination`.
->   - `Confirm Move` remains disabled until a valid node/destination is selected.
->   - Clicking controls does not clear the selected tree row.
->
-> ## Assumptions
->
-> - This change is intentionally visual/structural only.
-> - The existing `Confirm Move` label stays.
-> - The heading text should stay small and quiet, not hero-sized.
 </details>
+
+I’ll keep this as a planning pass and inspect the current `app.vue` structure so the plan points to the exact template/CSS blocks that need changing.
 
 > PLEASE IMPLEMENT THIS PLAN:
 > # Plan: Reorganize Move Controls In `app.vue`
@@ -9694,19 +9220,9 @@ I would avoid making the heading too large. Something like `Move selected item` 
 > - The existing `Confirm Move` label stays.
 > - The heading text should stay small and quiet, not hero-sized.
 
-<details><summary>8 previous messages</summary>
+<details><summary>5 previous messages</summary>
 
 > I’ll make this as a narrow `app.vue` template/CSS edit only. I’m checking the required docs quickly, then I’ll patch the control layout and run the build.
->
-> <details><summary>Ran 5 commands</summary>
->
-> - Ran `Get-Content -Path README.md`
-> - Ran `Get-Content -Path specs\spec-file-explorer.md`
-> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
-> - Ran `Get-Content -Path AI_USAGE.md`
-> - Ran `Get-Content -Path app\app.vue`
->
-> </details>
 >
 > I’ve confirmed the requested change is confined to the header controls. I’m replacing the flat action row with two stacked action groups, then I’ll build to catch any Vue template mistakes.
 >
@@ -9718,19 +9234,7 @@ I would avoid making the heading too large. Something like `Move selected item` 
 >
 > The UI grouping patch is in. Now I’m running the build; if anything fails, it should be either a template typo from this edit or one of the recent SQLite-route changes surfacing in production build.
 >
-> <details><summary>Ran a command</summary>
->
-> - Ran `npm.cmd run build`
->
-> </details>
->
 > The first build attempt didn’t report a template error, but it timed out while Nuxt was still building. I’m going to rerun it with a longer timeout so we get a real pass/fail instead of a stopwatch answer.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `npm.cmd run build`
->
-> </details>
 </details>
 
 Implemented the control regrouping in [app.vue](<./app/app.vue>).
@@ -9844,16 +9348,8 @@ No backend/database changes needed. This is entirely `app.vue`.
 
 > ALright good catch on the subtle point. I agree with the design you proposed at the end. Stay in plan mode for now, propose exactly what changes in [app.vue](app/app.vue)
 
-<details><summary>4 previous messages</summary>
+<details><summary>1 previous message</summary>
 
-> I’ll stay in planning mode and re-read the current `app.vue` so the collapse plan names the exact reactive values, computed helpers, template spots, and CSS selectors to change.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -Path app\app.vue`
->
-> </details>
->
 > Plan
 >
 > # Plan: Add Folder Collapse Toggle In `app.vue`
@@ -9973,128 +9469,9 @@ No backend/database changes needed. This is entirely `app.vue`.
 > - Collapse state is UI-only and does not persist in SQLite.
 > - Use simple ASCII symbols `>` and `v` for now.
 > - No API, database, or server utility changes are needed.
->
-> Plan implementation
->
-> Status: completed
-> # Plan: Add Folder Collapse Toggle In `app.vue`
->
-> ## Summary
->
-> Implement folder collapse/expand entirely in `app/app.vue`. This is frontend-only UI state: it hides or shows visible tree rows, while the full tree remains available for selection lookup and move-destination logic.
->
-> ## Key Changes
->
-> - Add collapse state:
->   ```ts
->   const collapsedFolderIds = ref<Set<string>>(new Set())
->   ```
->
-> - Update `flattenTree(...)` to accept an optional `collapsedIds` set:
->   ```ts
->   function flattenTree(
->     nodes: TreeNode[],
->     depth = 0,
->     ancestorIds: string[] = [],
->     collapsedIds: Set<string> | null = null
->   ): DisplayNode[]
->   ```
->   If a folder id is in `collapsedIds`, return the folder row but do not recurse into its children.
->
-> - Split the current `displayNodes` into two computed values:
->   ```ts
->   const allDisplayNodes = computed(...)
->   const visibleDisplayNodes = computed(...)
->   ```
->   Use `allDisplayNodes` for `selectedNode` and `moveDestinations`, so collapsed descendants still exist in move logic. Use `visibleDisplayNodes` only for rendering the tree rows.
->
-> - Add helper functions with comments/docstrings:
->   ```ts
->   function isFolderCollapsed(nodeId: string): boolean
->   function expandFolder(folderId: string): void
->   function toggleFolderCollapsed(node: DisplayNode): void
->   ```
->   `toggleFolderCollapsed(node)` should:
->   - ignore non-folder nodes
->   - use a copied `Set` before reassignment so Vue detects the update
->   - clear selection/preview if collapsing a folder hides the currently selected descendant
->
-> - Slightly update existing handlers:
->   - `handleCreateFolderClick()` should expand the selected parent folder after creating a child folder, so the new folder is visible.
->   - `handleMoveNodeClick()` should expand the destination folder after a successful move, so the moved item is visible.
->
-> ## Template Changes
->
-> - Change the tree list loop:
->   ```vue
->   v-for="node in visibleDisplayNodes"
->   ```
->
-> - Add a small collapse toggle between indentation guides and the folder/file icon:
->   ```vue
->   <button
->     v-if="node.type === 'folder' && node.children.length > 0"
->     type="button"
->     class="collapse-toggle"
->     :aria-label="isFolderCollapsed(node.id) ? `Expand ${node.name}` : `Collapse ${node.name}`"
->     :aria-expanded="!isFolderCollapsed(node.id)"
->     @click.stop="toggleFolderCollapsed(node)"
->   >
->     {{ isFolderCollapsed(node.id) ? '>' : 'v' }}
->   </button>
->
->   <span v-else class="collapse-spacer" aria-hidden="true" />
->   ```
->
-> - Keep row selection on the existing `<li @click.stop="selectNode(node)">`; clicking the collapse toggle should not select/deselect the row because it uses `@click.stop`.
->
-> ## CSS Changes
->
-> - Add stable sizing for the toggle so tree rows do not shift:
->   ```css
->   .collapse-toggle,
->   .collapse-spacer {
->     display: inline-flex;
->     align-items: center;
->     justify-content: center;
->     flex: 0 0 18px;
->     width: 18px;
->     height: 18px;
->   }
->
->   .collapse-toggle {
->     padding: 0;
->     border: 0;
->     background: transparent;
->     color: #4b5563;
->     cursor: pointer;
->     font: inherit;
->     font-size: 12px;
->   }
->
->   .collapse-toggle:hover {
->     border-radius: 3px;
->     background: #dbeafe;
->   }
->   ```
->
-> ## Verification
->
-> - Run `npm.cmd run build`.
-> - Manually check:
->   - folder toggle hides descendants but leaves the folder row visible
->   - expanding restores descendants
->   - files do not show a toggle
->   - selecting a file then collapsing its parent clears the hidden selection/preview
->   - move dropdown still includes valid folder destinations even if parts of the tree are collapsed
->   - creating/moving into a collapsed folder expands that destination so the new/moved item is visible
->
-> ## Assumptions
->
-> - Collapse state is UI-only and does not persist in SQLite.
-> - Use simple ASCII symbols `>` and `v` for now.
-> - No API, database, or server utility changes are needed.
 </details>
+
+I’ll stay in planning mode and re-read the current `app.vue` so the collapse plan names the exact reactive values, computed helpers, template spots, and CSS selectors to change.
 
 > PLEASE IMPLEMENT THIS PLAN:
 > # Plan: Add Folder Collapse Toggle In `app.vue`
@@ -10215,19 +9592,9 @@ No backend/database changes needed. This is entirely `app.vue`.
 > - Use simple ASCII symbols `>` and `v` for now.
 > - No API, database, or server utility changes are needed.
 
-<details><summary>28 previous messages</summary>
+<details><summary>19 previous messages</summary>
 
 > I’ll make this entirely inside `app.vue`: split visible-vs-all flattened rows, add UI-only collapsed folder state, and keep move destinations based on the full tree so collapse doesn’t accidentally remove valid targets.
->
-> <details><summary>Ran 5 commands</summary>
->
-> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
-> - Ran `Get-Content -Path specs\spec-file-explorer.md`
-> - Ran `Get-Content -Path README.md`
-> - Ran `Get-Content -Path AI_USAGE.md`
-> - Ran `Get-Content -Path app\app.vue`
->
-> </details>
 >
 > I’m applying the collapse toggle now. The key care point is exactly the one we discussed: `visibleDisplayNodes` will drive the rendered rows, while `allDisplayNodes` remains available for selection lookup and move destinations.
 >
@@ -10239,31 +9606,9 @@ No backend/database changes needed. This is entirely `app.vue`.
 >
 > One implementation wrinkle: I’m also moving the collapsed-state declaration above the computed that reads it, so the file stays easy to reason about for future-you. Next patch is the template toggle and its stable CSS sizing.
 >
-> <details><summary>Edited a file</summary>
->
-> - Wrote `./app/app.vue` (+66 -30)
->
-> </details>
->
 > The patch missed because the exact template snippet has shifted slightly. I’ll read the nearby sections and apply a tighter patch against what’s actually in the file.
 >
-> <details><summary>Ran 5 commands</summary>
->
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 340 -First 70`
-> - Ran `Select-String -Path app\app.vue -Pattern "ROOT_DESTINATION_VALUE|collapsedFolderIds|v-for=\"node|tree-row:hover|node-icon" -Context 4,6`
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 430 -First 70`
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 500 -First 130`
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 30 -First 100`
->
-> </details>
->
 > The first code patch landed; I just need to complete the state-order cleanup and render/CSS part.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 130 -First 50`
->
-> </details>
 >
 > I found the collapse state was still declared after `visibleDisplayNodes`; it would probably work lazily, but I’m putting it above the computed so the script reads cleanly and avoids any temporal-dead-zone weirdness.
 >
@@ -10275,13 +9620,6 @@ No backend/database changes needed. This is entirely `app.vue`.
 >
 > Now I’m wiring the actual visual control into each tree row and switching the row loop to the collapsed-aware display list.
 >
-> <details><summary>Edited a file, ran a command</summary>
->
-> - Wrote `./app/app.vue` (+23 -12)
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 520 -First 40`
->
-> </details>
->
 > That second patch was too picky about the row snippet. I’m splitting it into smaller edits so it doesn’t get tripped up by nearby encoded icon text.
 >
 > <details><summary>Edited a file</summary>
@@ -10291,12 +9629,6 @@ No backend/database changes needed. This is entirely `app.vue`.
 > </details>
 >
 > The loop is now using `visibleDisplayNodes`; next I’m inserting the toggle control just before the icon.
->
-> <details><summary>Edited a file</summary>
->
-> - Wrote `./app/app.vue` (+22 -11)
->
-> </details>
 >
 > The insert is still catching on exact context, so I’m using the stable `tree-guide` closing lines rather than the icon text.
 >
@@ -10316,31 +9648,9 @@ No backend/database changes needed. This is entirely `app.vue`.
 >
 > All requested code pieces are in place. I’ll read the touched parts once, then run the Nuxt build to catch any type/template issues.
 >
-> <details><summary>Ran 3 commands</summary>
->
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 520 -First 90`
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 40 -First 210`
-> - Ran `Get-Content -Path app\app.vue | Select-Object -Skip 640 -First 90`
->
-> </details>
->
 > The code reads correctly. I’m running the production build now; given the recent SQLite work, I expect the usual externalized `node:sqlite`/duplicate auto-import warnings, but I’m watching for real Vue or TypeScript errors.
 >
-> <details><summary>Ran a command</summary>
->
-> - Ran `npm.cmd run build`
->
-> </details>
->
 > Build passed. I’m doing one final quick search for any leftover `displayNodes` references so the old render variable isn’t dangling anywhere.
->
-> <details><summary>Ran 3 commands</summary>
->
-> - Ran `git diff -- app\app.vue`
-> - Ran `rg "displayNodes|visibleDisplayNodes|allDisplayNodes|collapsedFolderIds" app\app.vue`
-> - Ran `git status --short`
->
-> </details>
 </details>
 
 Implemented folder collapse/expand in [app.vue](<./app/app.vue>).
@@ -10357,21 +9667,9 @@ Verification: `npm.cmd run build` passed. The usual warnings remain: duplicate N
 
 > alright the spec needs catching up from db persistence up to the recent collapse/expand folder functionality. From the context lets brainstorm needs changing/expanding/rectifying in [spec-file-explorer.md](specs/spec-file-explorer.md)
 
-<details><summary>2 previous messages</summary>
+<details><summary>1 previous message</summary>
 
 > I’ll keep this read-only and inspect the current spec plus the relevant implementation shape, then I’ll map what’s stale versus what should be added.
->
-> <details><summary>Ran 7 commands</summary>
->
-> - Ran `Get-Content -Path specs\spec-file-explorer.md`
-> - Ran `Get-Content -Path app\app.vue`
-> - Ran `Get-Content -Path server\utils\db.ts`
-> - Ran `Get-Content -Path server\api\move.post.ts`
-> - Ran `Get-Content -Path server\api\folders.post.ts`
-> - Ran `Get-Content -Path server\api\tree.get.ts`
-> - Ran `Get-Content -Path server\api\markdown.get.ts`
->
-> </details>
 </details>
 
 Yes, the spec is now lagging behind the actual app in a few important places. I’d treat this as a **targeted catch-up rewrite**, not a full rewrite from scratch.
@@ -10582,27 +9880,9 @@ This may still be a product concern depending on UI behavior, but backend pure l
 
 > alright let us go into plan mode to revise the spec [spec-file-explorer.md](specs/spec-file-explorer.md)
 
-<details><summary>6 previous messages</summary>
+<details><summary>2 previous messages</summary>
 
 > I’ll keep this in planning mode and do a quick targeted pass over the current spec plus the implementation points the spec needs to catch up with. Then I’ll identify any decisions we need to lock before writing a clean revision plan.
->
-> <details><summary>Ran 4 commands</summary>
->
-> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern "Stage 4|UI Behavior|Frontend Rendering|Frontend Rendering Helpers|Persistence / DB|Open Questions|displayNodes|node:sqlite|node-store|Preview markdown|Move file" -Context 3,6`
-> - Ran `Select-String -Path app\app.vue -Pattern "allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|toggleFolderCollapsed|handleCreateFolderClick|handleMoveNodeClick|moveDestinations|markdownPreview" -Context 2,4`
-> - Ran `Select-String -Path server\utils\db.ts -Pattern "DATABASE_PATH|ensureDatabase|seedDatabaseIfEmpty|loadNodes|insertFolder|updateNodeParent|CREATE TABLE" -Context 2,5`
-> - Ran `Select-String -Path server\api\*.ts -Pattern "../utils/db|node-store|temporary in-memory|SQLite|GET /api|POST /api" -Context 1,4`
->
-> </details>
->
-> The repo truth is clear now: APIs import from `db.ts`, SQLite is active, `node-store.ts` is now prototype/reference code, and `app.vue` has both `allDisplayNodes` and collapsed-aware `visibleDisplayNodes`. Before I lock the spec-revision plan, there are two product/spec choices worth deciding rather than burying as accidental behavior.
->
-> User input response
->
-> - When a file is selected and the user clicks `+ Folder`, what should the spec say should happen?
->   - Create at root (Recommended)
-> - How should the revised Development Plan section treat the earlier stages?
->   - Historical + current (Recommended)
 >
 > Plan
 >
@@ -10695,100 +9975,9 @@ This may still be a product concern depending on UI behavior, but backend pure l
 > - Read the file back after editing.
 > - Confirm no source code, README, or AI usage files are modified.
 > - No build or tests required for this docs-only update.
->
-> Plan implementation
->
-> Status: completed
-> # Plan: Catch Up `spec-file-explorer.md`
->
-> ## Summary
->
-> Revise only `specs/spec-file-explorer.md` so it reflects the current app: SQLite-backed persistence through `db.ts`, API routes using the DB layer, Markdown preview behavior, grouped move controls, and frontend-only folder collapse/expand. Preserve the current section structure and learning-stage narrative, but mark the app’s current architecture clearly.
->
-> ## Key Spec Updates
->
-> - Update MVP flow to describe the actual current path:
->   - `GET /api/tree` loads SQLite rows through `db.ts`, calls `buildTree(nodes)`, and returns `TreeNode[]`.
->   - `POST /api/folders` and `POST /api/move` update SQLite, reload rows, rebuild the tree, and return updated `TreeNode[]`.
->   - `GET /api/markdown?fileId=...` looks up the virtual file node, then reads Markdown content from `files/`.
->   - Collapse/expand is UI-only and not persisted.
->
-> - Revise Development Plan as “historical + current”:
->   - Keep Stages 1-3 as prototype/learning stages.
->   - Mark Stage 4 SQLite persistence as current implementation direction.
->   - Add current UI stages for Markdown preview, grouped controls, move dropdown, and collapse/expand folders.
->
-> - Expand Expected Behavior:
->   - Document `server/utils/db.ts`, built-in `node:sqlite`, `DatabaseSync`, `data/file-explorer.sqlite`, and the `nodes` table.
->   - Clarify `node-store.ts` is prototype/reference code, while `db.ts` is the active persistence layer.
->   - Add UI behavior for grouped controls, move destinations, current-location disabled options, root destination, preview clearing, and collapse/expand.
->
-> - Rewrite frontend flow details:
->   - Replace stale `displayNodes` language with:
->     ```ts
->     allDisplayNodes
->     visibleDisplayNodes
->     collapsedFolderIds
->     ```
->   - State that `allDisplayNodes` powers selection lookup and move destinations, while `visibleDisplayNodes` powers the rendered tree.
->   - Add collapse behavior: folders with children get toggles, files do not, collapsing hides descendants but keeps the folder row visible.
->   - Document that collapsing a selected descendant clears selection and preview.
->
-> - Update function/interface sections:
->   - Add/adjust frontend helpers:
->     ```ts
->     flattenTree(nodes, depth, ancestorIds, collapsedIds)
->     isFolderCollapsed(nodeId)
->     expandFolder(folderId)
->     toggleFolderCollapsed(node)
->     loadMarkdownPreview(fileId)
->     clearMarkdownPreview()
->     handleMoveNodeClick()
->     ```
->   - Keep DB operations:
->     ```ts
->     ensureDatabase()
->     seedDatabaseIfEmpty()
->     loadNodes()
->     insertFolder(parentId, name)
->     updateNodeParent(nodeId, newParentId)
->     ```
->   - Note that DB operations reuse pure `createFolder(...)` and `moveNode(...)` for validation before persisting.
->
-> ## Behavior Decisions To Lock
->
-> - If a file is selected and the user clicks `+ Folder`, the folder is created at the root. Only selected folders act as create-folder parents.
-> - Move-to-root is represented in the frontend with a sentinel string and converted to `null` before calling the API.
-> - Move destinations are generated from the full tree, not the collapsed visible tree.
-> - Collapse state is not saved to SQLite.
-> - Creating or moving into a collapsed folder expands that folder so the result is visible.
-> - `node:sqlite` is the chosen SQLite approach; remove it from open questions.
->
-> ## Checklist Updates
->
-> - Add manual acceptance items for:
->   - SQLite DB creation under `data/`.
->   - initial seed happens once.
->   - created folders persist after restart.
->   - moved nodes persist after restart.
->   - collapse hides descendants.
->   - expand restores descendants.
->   - collapsed folders still appear as valid move destinations.
->   - collapsing a parent of the selected file clears preview.
->   - creating/moving into a collapsed folder expands it.
->
-> - Update Open Questions:
->   - Remove resolved `node:sqlite` question.
->   - Remove or reframe the “creating folder beneath a file” warning since the intended behavior is root creation when a file is selected.
->   - Keep genuinely unresolved questions: duplicate names, unknown filename patterns, ID strategy, and sort-order policy.
->
-> ## Verification
->
-> - Edit only `specs/spec-file-explorer.md`.
-> - Read the file back after editing.
-> - Confirm no source code, README, or AI usage files are modified.
-> - No build or tests required for this docs-only update.
 </details>
+
+The repo truth is clear now: APIs import from `db.ts`, SQLite is active, `node-store.ts` is now prototype/reference code, and `app.vue` has both `allDisplayNodes` and collapsed-aware `visibleDisplayNodes`. Before I lock the spec-revision plan, there are two product/spec choices worth deciding rather than burying as accidental behavior.
 
 > PLEASE IMPLEMENT THIS PLAN:
 > # Plan: Catch Up `spec-file-explorer.md`
@@ -10881,22 +10070,9 @@ This may still be a product concern depending on UI behavior, but backend pure l
 > - Confirm no source code, README, or AI usage files are modified.
 > - No build or tests required for this docs-only update.
 
-<details><summary>17 previous messages</summary>
+<details><summary>11 previous messages</summary>
 
 > I’ll update only the spec and keep it aligned to the app as it now stands: SQLite is active through `db.ts`, `node-store.ts` is prototype history, and collapse state lives only in `app.vue`. I’ll do the required doc/code read first, then patch the spec and read it back.
->
-> <details><summary>Ran 8 commands</summary>
->
-> - Ran `Get-Content -Path internship-file-explorer-take-home-task.md`
-> - Ran `Get-Content -Path specs\spec-file-explorer.md`
-> - Ran `Get-Content -Path README.md`
-> - Ran `Get-Content -Path server\utils\db.ts`
-> - Ran `Get-Content -Path AI_USAGE.md`
-> - Ran `Get-Content -Path server\api\folders.post.ts`
-> - Ran `Get-Content -Path server\api\tree.get.ts`
-> - Ran `Get-Content -Path app\app.vue`
->
-> </details>
 >
 > I’m going to replace the spec content with a cleaned-up version that keeps the ten-section structure, but removes stale `displayNodes`/prototype wording where it no longer applies. It will still keep the learning-stage history, just with the current architecture clearly marked.
 >
@@ -10908,15 +10084,6 @@ This may still be a product concern depending on UI behavior, but backend pure l
 >
 > The spec rewrite is in place. I’m reading it back and checking git status/diff now to verify only the spec changed in this step and that the requested sections are present.
 >
-> <details><summary>Ran 4 commands</summary>
->
-> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern "^## [0-9]\. |node:sqlite|allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|data/file-explorer.sqlite|node-store.ts|Open Questions|Manual Acceptance"`
-> - Ran `git status --short`
-> - Ran `Get-Content -Path specs\spec-file-explorer.md`
-> - Ran `git diff --stat -- specs\spec-file-explorer.md`
->
-> </details>
->
 > Context compaction
 >
 > Source: automatic
@@ -10924,24 +10091,7 @@ This may still be a product concern depending on UI behavior, but backend pure l
 >
 > I’ve got the spec rewrite applied; I’m just doing a tight readback now so we can confirm the document caught up cleanly without touching code.
 >
-> <details><summary>Ran 4 commands</summary>
->
-> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern '^## '`
-> - Ran `git status --short`
-> - Ran ``rg "node:sqlite|DatabaseSync|data/file-explorer.sqlite|node-store.ts|allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|displayNodes|Should `node:sqlite`|creating a folder beneath a file" specs/spec-file-explorer.md``
-> - Ran `git diff --stat -- specs/spec-file-explorer.md`
->
-> </details>
->
 > The section order checks out. One verification command tripped over PowerShell’s backtick escaping, so I’m rerunning that as simpler pattern checks rather than treating it as a content problem.
->
-> <details><summary>Ran 3 commands</summary>
->
-> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern '^### '`
-> - Ran `rg "node:sqlite|DatabaseSync|data/file-explorer.sqlite|node-store.ts|allDisplayNodes|visibleDisplayNodes|collapsedFolderIds|displayNodes|creating a folder beneath a file" specs/spec-file-explorer.md`
-> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern 'GET /api/tree','POST /api/folders','POST /api/move','GET /api/markdown','collapse','Move-to-root','current location'`
->
-> </details>
 >
 > The update is in place and the diff is docs-only. I spotted one wording that could be clearer: “allDisplayNodes ignores collapsed folders” really means it ignores collapse state, so I’m tightening that language in the spec before I call it done.
 >
@@ -10953,22 +10103,7 @@ This may still be a product concern depending on UI behavior, but backend pure l
 >
 > That small wording patch is done. I’m doing one final narrow check for the updated terms and for any leftover old `displayNodes` reference as a standalone name.
 >
-> <details><summary>Ran 4 commands</summary>
->
-> - Ran `rg '\bdisplayNodes\b' specs/spec-file-explorer.md`
-> - Ran `rg "allDisplayNodes ignores collapse state|visibleDisplayNodes respects|collapsedFolderIds|node:sqlite|data/file-explorer.sqlite|node-store.ts remains" specs/spec-file-explorer.md`
-> - Ran `git diff --stat -- specs/spec-file-explorer.md`
-> - Ran `git status --short`
->
-> </details>
->
 > The standalone old `displayNodes` name is gone. I’m checking one nearby excerpt now because one exact phrase didn’t show in the grep output, which usually means the wording is simply split or different than the pattern.
->
-> <details><summary>Ran a command</summary>
->
-> - Ran `Select-String -Path specs\spec-file-explorer.md -Pattern 'allDisplayNodes' -Context 1,1`
->
-> </details>
 </details>
 
 Updated [spec-file-explorer.md](<./specs/spec-file-explorer.md>) to catch up with the current app.
@@ -10976,3 +10111,1455 @@ Updated [spec-file-explorer.md](<./specs/spec-file-explorer.md>) to catch up wit
 It now covers SQLite-backed persistence through `db.ts`, `node:sqlite` / `DatabaseSync`, the active API flow, Markdown preview behavior, grouped move controls, and frontend-only collapse/expand state. I also updated the development plan, frontend helper/state descriptions, validation rules, manual checklist, and open questions so resolved items like the SQLite choice are no longer treated as open.
 
 Verification done: read back section headings and key updated passages, confirmed no standalone stale `displayNodes` reference remains, and did not edit source code, README, or AI usage files. No build/tests run since this was docs-only.
+
+> alright I am planning to populate [AI_USAGE.md](AI_USAGE.md) but before answering the question I wanna try to figure out the 'timeline' of this assessment as per [codex-chat.md](ai-conversations/codex-chat.md) , and who (me or codex) moved the project forward overtime (e.g. making decision about stuff, proposing stuff, etc). I know it is quite a long document so just the high level is ok
+
+<details><summary>4 previous messages</summary>
+
+> I’ll treat this as read-only and reconstruct the timeline from the conversation log rather than polishing `AI_USAGE.md` yet. I’ll first check that the chat log is not ignored, then skim it for the major decision points and implementation turns.
+>
+> The log is about 389 KB, so I’m going to sample the major clusters rather than read every line verbatim. The first pass already shows a clear arc: project framing, docs/spec, staged tree logic, Nuxt/API wiring, UI interactions, then SQLite persistence and polish.
+>
+> I have enough for the early/middle phases now. I’m sampling the later clusters around UI actions, Markdown preview, SQLite, and collapse, because those are the places where “who pushed the work forward” will matter most for `AI_USAGE.md`.
+>
+> The later part confirms the pattern: you usually initiated the next feature or concern, I often turned it into a layered plan, then you explicitly approved implementation. I’m doing one final sample around SQLite implementation/collapse/spec catch-up so the timeline doesn’t miss the recent Stage 4 work.
+</details>
+
+Yes. Reading the log at a high level, the project moved forward as a collaboration, but with a pretty clear split:
+
+You mostly drove **scope, product decisions, learning checkpoints, and when to pause/rethink**. Codex mostly drove **implementation plans, explanations, and code edits after you explicitly approved a plan**.
+
+A rough timeline:
+
+| Phase | Main Progress | Who Drove It |
+|---|---|---|
+| 1. Requirements + assumptions | Clarified MVP, virtual folders, keeping `files/` flat, SQLite as persistence, initial hierarchy needed | Shared, but you made the final calls |
+| 2. Project conventions | Created `AGENTS.md` to lock in architecture, safety, MVP, and AI-agent conventions | You requested exact plan/content; Codex implemented |
+| 3. Stack learning | Explained Node, npm, Nuxt, TypeScript, Vue files, runtime, server meaning, imports | You asked learning questions; Codex explained and later wrote notes |
+| 4. Product spec | First spec was messy; you pushed for a clearer structure with MVP flow, stages, interfaces, tests | Strongly user-driven; Codex rewrote after your structure |
+| 5. Tree logic prototypes | Built `buildTree`, `formatTree`, `createFolder`, `moveNode`, then staged filename organization | Shared: you reasoned through algorithms; Codex explained and implemented |
+| 6. Nuxt app skeleton | Moved tree utilities into `server/utils`, added `/api/tree`, rendered basic tree in `app.vue` | You chose to “bring app skeleton to light”; Codex wired it |
+| 7. Create-folder UI | Added in-memory store, folder creation route, selected-folder behavior, root fallback | Shared: you defined UX assumptions; Codex implemented |
+| 8. Move-file/folder UI | Added `/api/move`, destination dropdown, root sentinel, invalid-destination filtering | Very shared: you proposed interaction model; Codex refined and coded |
+| 9. Markdown preview | Added `GET /api/markdown?fileId=...`, preview state, stale-response guard | You chose behavior; Codex implemented |
+| 10. SQLite persistence | Created `db.ts`, reused pure functions, switched API direction toward DB-backed storage | Shared: you reasoned architecture; Codex implemented DB layer |
+| 11. UI polish | Grouped controls and added collapse/expand folders | You noticed UX issues and requested improvements; Codex implemented |
+| 12. Spec catch-up | Updated spec to reflect DB persistence, preview, move UI, collapse state | You requested catch-up; Codex revised docs |
+
+For `AI_USAGE.md`, I’d frame it like:
+
+> I used Codex as a collaborative assistant for architecture clarification, learning support, implementation planning, code generation, debugging, and documentation. I made key product and architecture decisions, including virtual folder storage, SQLite persistence, staged development, UI behavior, and when to defer testing/polish. Codex proposed options, explained unfamiliar Node/Nuxt/Vue concepts, implemented approved changes, and helped keep the spec aligned with the code.
+
+That would be honest and reviewer-friendly: it shows AI assistance, but also shows you were actively steering the work instead of passively accepting generated code.
+
+> Alright. I want to push my `master` branch remotely, but before that lets brainstorm on:
+> - ensuring that installation instructions on README.md are crystal clear (req says running app locally should be without any second guessing)
+> - making sure gitignored files stay gitignored, and if applicable identify files/directories that should be gitignored
+
+<details><summary>4 previous messages</summary>
+
+> Good pre-push pause. I’ll stay read-only and check the README, `.gitignore`, package scripts, and tracked/untracked status so the brainstorm is grounded in what Git would actually push.
+>
+> README currently has the right skeleton, but it still has one stale uncertainty: it says Node SQLite is “to be confirmed later,” while the implementation now uses `node:sqlite`. I’m checking the visible file set next so we can separate “should be committed” from “should remain local/generated.”
+>
+> Git status is clean and there are no untracked visible files waiting to be added. I’m doing one last check for the sneaky case: ignored paths that are already tracked, because `.gitignore` does not remove files once Git has started tracking them.
+>
+> Tiny Git syntax hiccup on that last check, not a repo problem. I’m rerunning it with the required flag so we know whether any tracked file is matching ignore rules.
+</details>
+
+Good instincts before pushing `master`.
+
+**README Changes I’d Make**
+Your README is close, but I’d tighten it so a reviewer can run the app without guessing:
+
+- Remove stale uncertainty:
+  - Current README says `node:sqlite` is “to be confirmed later.”
+  - It should now say the app **uses Node’s built-in `node:sqlite`; no separate SQLite installation is needed**.
+
+- Be explicit that the SQLite DB is created automatically:
+  - `data/file-explorer.sqlite` is generated on first run.
+  - `data/` is intentionally ignored by Git.
+  - The app seeds from `files/` when the DB is empty.
+
+- Add a short “Run locally” flow:
+  ```powershell
+  npm.cmd install
+  npm.cmd run dev
+  ```
+  Then open the printed local URL, usually `http://localhost:3000`.
+
+- Add optional verification:
+  ```powershell
+  npm.cmd run build
+  ```
+  This reassures reviewers that there is a build check.
+
+- Mention Node version with purpose:
+  - “Node.js 24.x recommended because the app uses built-in `node:sqlite`.”
+  - npm comes with Node, so they probably do not need to install npm separately.
+
+**Gitignore Status**
+Current `.gitignore` is doing the important things:
+
+- `node_modules/` ignored
+- `.nuxt/` ignored
+- `.output/` ignored
+- `data/` ignored
+- logs ignored
+- `.env` ignored
+
+I checked:
+
+- `git status --short` is clean.
+- There are no untracked non-ignored files.
+- Ignored generated dirs currently include `.nuxt/`, `.output/`, `data/`, and `node_modules/`.
+- No tracked files are accidentally matching `.gitignore`.
+
+So from a Git hygiene perspective, you are in good shape.
+
+**Possible `.gitignore` Additions**
+Not strictly required, but reasonable optional additions:
+
+```gitignore
+# Editor local settings
+.vscode/
+
+# Test reports / coverage if added later
+coverage/
+playwright-report/
+test-results/
+```
+
+I would only add `.vscode/` if you do not plan to share VS Code workspace settings. If you have no `.vscode/` right now, this can wait.
+
+Main README fix: remove “to be confirmed later” and clearly explain that SQLite persistence is automatic via `data/file-explorer.sqlite`.
+
+> Alright final check on [README.md](README.md) and a sanity check by skimming the entire codebase
+
+<details><summary>4 previous messages</summary>
+
+> I’ll do this as a read-only review pass: README clarity first, then a quick codebase skim for push-blockers like broken imports, stale comments that could confuse reviewers, tracked generated files, and obvious runtime/build risks.
+>
+> README is mostly good now, with a couple wording nits. I’m skimming the source/API utilities next; that’s where I’d expect any real pre-push risk to hide.
+>
+> The main app code is coherent, but I spotted one reviewer-facing issue: some rendered icons in `app.vue` and parts of `AI_USAGE.md` show mojibake/encoding artifacts. Functionally the app may still run, but that’s the kind of small polish issue a reviewer will notice. I’m checking APIs and specs now.
+>
+> The server route imports are correct for SQLite, but a few comments still say “temporary in-memory store/server memory.” That won’t break anything, but before a take-home push I’d clean those because the spec/README now say SQLite is active.
+</details>
+
+**Findings**
+
+1. Stale SQLite comments in API routes
+   These are not runtime bugs, but they contradict the current architecture and could confuse a reviewer:
+   - `server/api/tree.get.ts` says it loads from “temporary in-memory store”
+   - `server/api/folders.post.ts` says it updates “server memory”
+   - `server/api/move.post.ts` says it updates “server memory” and later SQLite
+
+   Since these routes now import from `../utils/db`, I’d update those comments before pushing.
+
+2. README is clear enough, but has one awkward sentence
+   This line reads a bit rough:
+   ```md
+   Add optional verification by running to ensure build check
+   ```
+   I’d rewrite to:
+   ```md
+   Optional: verify the production build:
+   ```
+   Then keep:
+   ```powershell
+   npm.cmd run build
+   ```
+
+3. README could explicitly say `npm install` uses `package.json` / `package-lock.json`
+   Not required, but helpful for “without guessing.” A reviewer will know this, but future-you might appreciate it.
+
+**Gitignore / Repo Sanity**
+
+Looks good:
+- `git status --short --ignored` only shows ignored generated/local dirs:
+  - `.nuxt/`
+  - `.output/`
+  - `data/`
+  - `node_modules/`
+- No tracked files are accidentally matching `.gitignore`.
+- No untracked visible files are waiting to be added.
+- `data/file-explorer.sqlite` will stay local, which is correct.
+
+Optional `.gitignore` additions before push:
+```gitignore
+.vscode/
+coverage/
+playwright-report/
+test-results/
+```
+
+**Overall**
+
+I’d make the tiny README wording cleanup and stale API comment cleanup, then you’re in good shape to push. I did not run `npm.cmd run build` in this read-only pass; based on the code skim, the main risks are polish/documentation consistency rather than obvious broken imports.
+
+> alright recheck again
+
+<details><summary>2 previous messages</summary>
+
+> I’ll re-run the same final-pass checks: README wording, stale route comments, Git status/ignored files, and a quick source scan for obvious leftover inconsistencies.
+>
+> The stale comments are mostly fixed now. I see a couple tiny wording issues in the new comments, and Git now shows edited files waiting to be committed. I’ll check `.gitignore` and scan for remaining stale phrases.
+</details>
+
+Recheck looks good overall. The earlier stale README line is fixed, and the API comments no longer claim the routes use in-memory storage.
+
+A few remaining nits before pushing:
+
+1. `server/api/folders.post.ts` comment has awkward grammar:
+```ts
+Creates a virtual folder by an insertion operation into,
+the SQLite database, then returns the updated tree.
+```
+Better:
+```ts
+Creates a virtual folder in SQLite, then returns the updated tree.
+```
+
+2. `server/api/move.post.ts` comment is okay, but can be smoother:
+```ts
+Moves a file/folder by updating SQLite, then returns the updated tree.
+```
+
+3. `.gitignore` now includes the useful additions:
+```gitignore
+.vscode/
+coverage/
+playwright-report/
+test-results/
+```
+Good. It just lacks a final newline, which is harmless but easy to clean.
+
+4. `docs/learning-notes.md` still has an open question about whether to use built-in `node:sqlite`. Since the app now uses it, that note is stale. Not a push blocker unless you care about internal docs consistency.
+
+Git hygiene:
+- Modified files now are:
+  - `.gitignore`
+  - `README.md`
+  - `server/api/folders.post.ts`
+  - `server/api/move.post.ts`
+  - `server/api/tree.get.ts`
+- Ignored generated/local dirs remain ignored:
+  - `.nuxt/`
+  - `.output/`
+  - `data/`
+  - `node_modules/`
+- No tracked files are accidentally matching `.gitignore`.
+
+I’d make the two tiny API comment wording tweaks, then run `npm.cmd run build` once before commit/push.
+
+> Alright all is done. I have a new machine i can test the local deployment to, but can you use Docker
+
+Yes, Docker is a good way to test “can another machine run this without local project setup surprises?”
+
+But for this take-home, I’d treat Docker as **optional validation**, not required, unless the task asks for it. The reviewer requirement is mainly clone + install + run locally.
+
+You have two options:
+
+**Option A: Test Like A Reviewer**
+On the new machine:
+
+```powershell
+git clone <repo-url>
+cd <repo-folder>
+npm install
+npm run dev
+```
+
+or PowerShell-safe:
+
+```powershell
+npm.cmd install
+npm.cmd run dev
+```
+
+This is the most faithful test of your README.
+
+**Option B: Use Docker As A Clean-Room Test**
+Docker can simulate a fresh environment, but you’d need to add a `Dockerfile` or run a temporary container. If you add Docker files, that becomes extra project surface reviewers may inspect.
+
+A minimal Dockerfile would be something like:
+
+```dockerfile
+FROM node:24
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+```
+
+Then:
+
+```powershell
+docker build -t file-explorer-test .
+docker run --rm -p 3000:3000 file-explorer-test
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+My recommendation: first test on the new machine using the README instructions directly. Use Docker only if you want a second “fresh environment” check. Since your app uses local SQLite under `data/`, Docker will create that database inside the container unless you mount a volume.
+
+> but in any case for a windows machine do you have to install Node.js manually
+
+Yes. For your README’s normal local setup, a Windows machine needs **Node.js installed manually first**.
+
+Once Node.js is installed, `npm` comes with it. Then the project steps are:
+
+```powershell
+git clone <repo-url>
+cd <repo-folder>
+npm.cmd install
+npm.cmd run dev
+```
+
+For this app specifically, use **Node.js 24.x** if possible, because the app uses built-in `node:sqlite`.
+
+Docker is the exception: if the machine has Docker installed, the container image can provide Node.js internally. But without Docker, the reviewer/user needs Node.js installed on Windows.
+
+> Just a short reflection, this has been an interesting project because this is the first time attempting a project on a programming language I am not familiar with. HOwever I think aside from being mindful about the scope, key decisions, key flows (which I have found mysef white knuckling throughout) I think i need to really brush up my testing skills in terms of test driven development: namely language-agnostic paradigms such as AAA -- though thats mostly for unit tests (which I suppose can be regarded as a 'transferrable skill' in softrware development and things in general that involve coding, even data science which is my primary discipline). Unit testing is pretty easy -- you just have to find common frameworks and libraries for the programming language you're working on (e.g. pytest/unittest for python), and reason with your AI on how tests should be implemented so that the AI should not second guess test implemnetation when you give it a test matrix (test function, fixtures, parameters, etc); however integration and end to end testing can be quite tricky especially for the assessment I did about building apps -- also: how to log tests, what to record, how do you define coverage, etc. And most importantly, know what you want (because when you say "generate everything no mistakes" you dont even know what you want), keep a thorough and easy to navigate documentation about how you produced code with or without actually manually generating code (preferrablly the former but in this project one cant possibly learn a semseter of javascript before commencing can you)
+
+That’s a very fair reflection, and honestly a pretty mature one.
+
+The big transferable lesson here is not “I learned Nuxt perfectly.” It is more like: you practiced turning ambiguity into constraints, constraints into interfaces, interfaces into code, and then code back into documentation. That is a real software skill.
+
+I also think you’re right about testing. Unit testing is often the easiest layer to transfer across languages because the thinking is stable:
+
+```text
+Arrange: set up inputs/state
+Act: call the function
+Assert: check expected result
+```
+
+For this project, the most natural unit-test targets would have been:
+
+- `buildTree(nodes)`
+- `organizeInitialFiles(fileNames)`
+- `createFolder(nodes, parentId, name)`
+- `moveNode(nodes, nodeId, newParentId)`
+- invalid move cases
+
+Integration testing gets harder because now you are testing boundaries:
+
+```text
+SQLite created?
+Seed happens once?
+POST /api/folders persists?
+POST /api/move persists?
+GET /api/markdown reads the correct file?
+```
+
+End-to-end testing is harder again because it asks: does the full user workflow work through the browser?
+
+```text
+open app
+click folder
+create folder
+move file
+refresh/restart
+confirm state persists
+```
+
+And yes, “coverage” is not just percentage. A useful coverage definition is: have we tested the behaviors most likely to break and most important to the product? For this app, correctness lives more in the data model and move rules than in whether every CSS line is executed.
+
+The line you wrote, “know what you want,” is probably the central AI lesson. AI is much more useful when you give it:
+
+```text
+scope
+interfaces
+test matrix
+acceptance criteria
+non-goals
+review checklist
+```
+
+than when you ask it to magically produce a perfect thing. This project had a lot of white-knuckling, sure, but that white-knuckling was also you building judgment. You kept stopping the machine and asking: what are we actually doing, where should this live, what is the source of truth, what should be deferred?
+
+That is the work. The syntax can be learned. The judgment is the harder, better part.
+
+<details><summary>1 previous message</summary>
+
+> Context compaction
+>
+> Source: automatic
+> Status: completed
+</details>
+
+> From the current spec [spec-file-explorer.md](specs/spec-file-explorer.md) I am planning to have you create some kind of structure (interactive one perhaps / explorer) to somehow visualize all the flows in my frontend to see which states and functions are involved in the flows. From the spec and code its hard by itself to see which interacts with which. Do not create anything, stay in brainstorm mode for now.
+
+<details><summary>1 previous message</summary>
+
+> I’ll stay read-only and think this through from the shape of the app we’ve built. I’ll frame this as possible visualization artifacts rather than jumping into implementation.
+</details>
+
+Yes, this would be useful. The current app now has enough frontend state and event flow that a visual map would probably help more than more prose.
+
+I’d think of this as a **frontend flow explorer** rather than one static diagram.
+
+A good structure could be:
+
+```text
+Frontend Flow Map
+├── State Model
+│   ├── tree
+│   ├── selectedNodeId
+│   ├── selectedNodeType
+│   ├── moveDestinationValue
+│   ├── markdownPreview
+│   ├── previewPending
+│   ├── previewError
+│   └── collapsedFolderIds
+│
+├── Derived State
+│   ├── allDisplayNodes
+│   ├── visibleDisplayNodes
+│   ├── selectedNode
+│   ├── moveDestinations
+│   ├── selectedMoveDestination
+│   └── canMoveSelectedNode
+│
+├── User Flows
+│   ├── Initial page load
+│   ├── Select folder
+│   ├── Select file
+│   ├── Clear selection
+│   ├── Create folder
+│   ├── Move node
+│   ├── Preview Markdown
+│   └── Collapse / expand folder
+│
+├── API Calls
+│   ├── GET /api/tree
+│   ├── POST /api/folders
+│   ├── POST /api/move
+│   └── GET /api/markdown
+│
+└── Rendering
+    ├── Left tree panel
+    ├── Action controls
+    ├── Move controls
+    └── Preview panel
+```
+
+The most useful artifact might be an **interactive HTML page in `docs/`**, maybe something like:
+
+```text
+docs/frontend-flow-map.html
+```
+
+It could show flow cards such as:
+
+```text
+User clicks file node
+↓
+selectNode(node)
+↓
+selectedNodeId = node.id
+selectedNodeType = "file"
+moveDestinationValue = "__root__"
+↓
+loadMarkdownPreview(node.id)
+↓
+GET /api/markdown?fileId=...
+↓
+markdownPreview = response
+previewPending = false
+↓
+Preview panel renders Markdown text
+```
+
+And another one:
+
+```text
+User clicks Confirm Move
+↓
+handleMoveNodeClick()
+↓
+selectedNode computed from allDisplayNodes
+selectedMoveDestination computed from moveDestinationValue
+canMoveSelectedNode must be true
+↓
+POST /api/move
+↓
+tree.value = updatedTree
+↓
+visibleDisplayNodes recomputes
+↓
+Tree rerenders
+```
+
+I’d probably make it visual in three linked layers:
+
+1. **State layer**
+   Shows raw refs and computed values, grouped by purpose.
+
+2. **Flow layer**
+   Shows each user action as a step-by-step chain: event → handler → state changes → API → returned data → rerender.
+
+3. **Code map layer**
+   Lists which functions participate in each flow, e.g.
+
+```text
+Create Folder
+Uses:
+- selectedNode
+- getCreateFolderParentId()
+- handleCreateFolderClick()
+- POST /api/folders
+- expandFolder()
+- tree.value
+- visibleDisplayNodes
+```
+
+For implementation later, I see three possible formats:
+
+| Option | Best for | Tradeoff |
+|---|---|---|
+| Markdown diagram doc | Fast, simple, reviewer-friendly | Not interactive |
+| Mermaid diagrams in Markdown | Nice flowcharts, still lightweight | Some renderers may not support it |
+| Standalone HTML flow explorer | Best learning tool, clickable/filterable | Takes more effort |
+
+My recommendation: create a **standalone docs page** eventually, not part of the Nuxt app. Something like `docs/frontend-flow-map.html` or `docs/frontend-flow-map.md`. Since this is mostly for your understanding, it should not increase app complexity.
+
+The first version could be non-interactive but structured, then later upgraded to collapsible sections if useful. The key is not beauty; it is making visible questions like:
+
+```text
+When I click this button, what refs change?
+Which computed values update automatically?
+Which API route gets called?
+Which backend function does that route touch?
+What rerenders afterward?
+```
+
+That would be a very good next documentation artifact.
+
+> yeah so the whole purpose is that I am thiinking of refactoring `app.vue` into logical components, but I wanna gain some intuition to eventually decide on how do we wanna do it -- currently distributing components arbitrarily will most likely not work because user flows, rendering flows are not independent. So yeah a standalone html flow explorer/interactive html page is good. To make this easy for you, which flows do we wanna do first?
+
+Yes, exactly. Before splitting `app.vue`, we want to understand **which pieces naturally belong together because they participate in the same flow**.
+
+I’d do the flows in this order:
+
+1. **Initial Tree Load**
+   This is the baseline.
+   ```text
+   app mounts
+   -> GET /api/tree
+   -> tree.value
+   -> allDisplayNodes
+   -> visibleDisplayNodes
+   -> left tree renders
+   ```
+   This tells us what every later flow depends on.
+
+2. **Select Node**
+   This is the central frontend interaction.
+   ```text
+   user clicks row
+   -> selectNode(node)
+   -> selectedNodeId / selectedNodeType
+   -> move dropdown state resets
+   -> folder clears preview OR file loads preview
+   ```
+   This helps decide whether selection state should stay in the parent or move into a tree component.
+
+3. **Preview Markdown File**
+   This is a clean file-specific flow.
+   ```text
+   selected file
+   -> loadMarkdownPreview(fileId)
+   -> GET /api/markdown
+   -> markdownPreview / previewPending / previewError
+   -> preview panel renders
+   ```
+   This may become a natural `MarkdownPreviewPanel` component later.
+
+4. **Create Folder**
+   This depends on selection state.
+   ```text
+   click + Folder
+   -> getCreateFolderParentId()
+   -> POST /api/folders
+   -> tree.value updated
+   -> expand selected parent if needed
+   -> tree rerenders
+   ```
+   This shows why the action controls need access to selected node context.
+
+5. **Move Node**
+   This is probably the densest flow.
+   ```text
+   selectedNode
+   -> moveDestinations
+   -> selectedMoveDestination
+   -> canMoveSelectedNode
+   -> POST /api/move
+   -> tree.value updated
+   -> expand destination if needed
+   -> tree rerenders
+   ```
+   This is the one most likely to reveal whether move controls deserve their own component.
+
+6. **Collapse / Expand Folder**
+   This is UI-only, but it affects rendering and selection.
+   ```text
+   click toggle
+   -> collapsedFolderIds
+   -> visibleDisplayNodes
+   -> maybe clear hidden selected node
+   -> tree rerenders
+   ```
+   This helps separate “tree rendering state” from “app data state.”
+
+So for the first version of the flow explorer, I’d include these six flows:
+
+```text
+1. Initial Tree Load
+2. Select Node
+3. Preview Markdown File
+4. Create Folder
+5. Move Node
+6. Collapse / Expand Folder
+```
+
+I would **not** start with every tiny helper. Instead, each flow card should show:
+
+```text
+User action
+State read
+Function/handler called
+API route, if any
+State written
+Computed values affected
+UI region rerendered
+Possible future component boundary
+```
+
+That last part is the reason this artifact is worth making. For example:
+
+```text
+Preview Markdown File
+Likely future component:
+- MarkdownPreviewPanel.vue
+
+Needs from parent:
+- selected file id or preview object
+- loading/error state
+
+Does not need:
+- moveDestinationValue
+- collapsedFolderIds
+```
+
+And:
+
+```text
+Move Node
+Likely future component:
+- MoveControls.vue
+
+Needs from parent:
+- selectedNode
+- moveDestinations
+- current moveDestinationValue
+- handleMoveNodeClick
+
+Depends on:
+- allDisplayNodes, not visibleDisplayNodes
+```
+
+So the first flow explorer should be designed less like documentation and more like a **component-refactor map**. Its job is to answer: “If I extract this piece, what state and handlers must cross the boundary?”
+
+> “If I extract this piece, what state and handlers must cross the boundary?” Exactly. Let's create a first version of the interactive HTML flow explorer in `docs/` based on what is currently in [app.vue](app/app.vue) and [spec-file-explorer.md](specs/spec-file-explorer.md). Feel free to ask clarifying questions.
+
+<details><summary>6 previous messages</summary>
+
+> I’ll create this as a standalone docs artifact, so it helps with refactoring without adding anything to the Nuxt runtime. First I’m going to reread the project/spec context plus `app.vue`, then I’ll add a single HTML file under `docs/` and sanity-check its contents.
+>
+> I’ve got the current flow shape now: `app.vue` is doing data fetch, selection, move computation, preview loading, and collapse state in one place. I’m going to make the explorer focus on those cross-boundary questions: state ownership, handlers, computed values, API calls, and likely future components.
+>
+> I’m editing a single standalone file, `docs/frontend-flow-explorer.html`. It will not depend on Nuxt, so you can open it directly in a browser and use it as a refactor planning aid.
+>
+> <details><summary>Created a file</summary>
+>
+> - Wrote `./docs/frontend-flow-explorer.html` (+885 -0)
+>
+> </details>
+>
+> The first version is in place. I’m reading it back now and doing a light static sanity pass, mainly checking that it is self-contained and that the flow sections line up with the current `app.vue` responsibilities.
+>
+> The file reads back cleanly as a self-contained page. One thing I noticed in this pass: I kept it deliberately independent from Nuxt and external libraries, so it can be opened directly and updated as the refactor plan evolves.
+</details>
+
+Created the first standalone interactive flow explorer at [docs/frontend-flow-explorer.html](<./docs/frontend-flow-explorer.html>).
+
+It covers six current `app.vue` flows:
+
+- Initial Tree Load
+- Select Node
+- Preview Markdown File
+- Create Folder
+- Move File Or Folder
+- Collapse Or Expand Folder
+
+Each flow shows the trigger, state read/written, API route if any, rendered region, and a “Component Boundary Notes” panel for future refactoring decisions. I kept it self-contained with plain HTML/CSS/JS, so it does not affect the Nuxt app runtime.
+
+Verification: read the file back after creation, confirmed it is the only new tracked-path change, and confirmed the file is ASCII-only. No build was run because this is a docs-only artifact.
+
+> Hmm maybe I am thinking of some sort of graph with all the flows attached, but I can highlight a flow to show all dependencies associated with that flow. Or rather, I can click multiple flows to see in which objects they collide. Stay in brainstorm mode for now.
+
+Yes, that’s a better direction than the current “one flow card at a time” version.
+
+What you’re describing is closer to a **dependency graph / flow overlap explorer**:
+
+```text
+Flows  <->  State / Computed / Handlers / APIs / Render Regions
+```
+
+Instead of reading each flow in isolation, you want to ask:
+
+```text
+If I select Create Folder and Move Node, what do they both depend on?
+If I select Preview and Select Node, what state do they collide on?
+If I extract TreePanel, which flows are affected?
+Which objects are shared by the most flows?
+```
+
+That is exactly the kind of view that helps component refactoring.
+
+A useful model would be a bipartite graph:
+
+```text
+[Flow nodes]                [Dependency nodes]
+
+Initial Tree Load  ----->   tree.value
+Select Node        ----->   selectedNodeId
+Preview Markdown   ----->   selectedNodeType
+Create Folder      ----->   handleCreateFolderClick
+Move Node          ----->   allDisplayNodes
+Collapse/Expand    ----->   collapsedFolderIds
+```
+
+Then clicking flows could highlight connected dependency nodes.
+
+The dependency node groups could be:
+
+```text
+State
+- tree
+- selectedNodeId
+- selectedNodeType
+- moveDestinationValue
+- markdownPreview
+- previewPending
+- previewError
+- collapsedFolderIds
+
+Computed
+- allDisplayNodes
+- visibleDisplayNodes
+- selectedNode
+- moveDestinations
+- selectedMoveDestination
+- canMoveSelectedNode
+
+Handlers / Helpers
+- flattenTree
+- selectNode
+- clearSelection
+- getCreateFolderParentId
+- handleCreateFolderClick
+- handleMoveNodeClick
+- loadMarkdownPreview
+- clearMarkdownPreview
+- isFolderCollapsed
+- expandFolder
+- toggleFolderCollapsed
+
+API
+- GET /api/tree
+- POST /api/folders
+- POST /api/move
+- GET /api/markdown
+
+Rendered Regions
+- tree rows
+- selected row highlight
+- create folder button
+- move controls
+- collapse toggles
+- preview panel
+```
+
+The interaction could be:
+
+```text
+[ ] Initial Tree Load
+[ ] Select Node
+[ ] Preview Markdown File
+[ ] Create Folder
+[ ] Move File Or Folder
+[ ] Collapse / Expand Folder
+```
+
+When you check one or more flows:
+
+```text
+- dependency nodes used by selected flows light up
+- shared dependencies get stronger highlighting
+- each dependency shows “used by 3 selected flows”
+- dependency table sorts by collision count
+```
+
+For example, selecting **Create Folder** and **Move Node** would probably reveal overlap like:
+
+```text
+Shared:
+- tree.value
+- selectedNodeId
+- selectedNodeType / selectedNode
+- allDisplayNodes maybe indirectly
+- collapsedFolderIds / expandFolder
+- left tree rows rerender
+
+Unique to Create Folder:
+- getCreateFolderParentId
+- POST /api/folders
+
+Unique to Move Node:
+- moveDestinationValue
+- moveDestinations
+- selectedMoveDestination
+- canMoveSelectedNode
+- POST /api/move
+```
+
+That gives you a much clearer refactor signal:
+
+```text
+Tree state probably stays high up.
+Selection state probably stays high up or in a shared composable.
+Preview can likely be separated.
+Move controls can be separated, but need selected node and full display rows.
+Collapse can live near TreePanel, but must coordinate with selection clearing.
+```
+
+I’d probably revise the HTML explorer into two modes:
+
+```text
+Mode 1: Flow Detail
+- what we already have
+- one flow at a time, step-by-step
+
+Mode 2: Dependency Graph
+- select multiple flows
+- see shared dependencies
+- see component-boundary pressure
+```
+
+If we keep it simple, I’d avoid a full force-directed graph at first. A cleaner version would be a **matrix**:
+
+```text
+Dependency                  Initial  Select  Preview  Create  Move  Collapse
+tree.value                  x                         x       x     x
+selectedNodeId                      x        x        x       x     x
+selectedNodeType                    x        x        x
+moveDestinationValue                x                         x
+markdownPreview                     x        x                         x
+collapsedFolderIds        x                                  x     x
+GET /api/tree              x
+POST /api/folders                                      x
+POST /api/move                                                 x
+GET /api/markdown                            x
+```
+
+Then selecting flows highlights columns and rows. This might actually be more useful than a visual graph because it is precise and scannable.
+
+My recommendation:
+
+1. Keep the existing flow detail explorer.
+2. Add a second section called **Dependency Overlap**.
+3. Represent it as a matrix plus summary cards:
+   ```text
+   Shared by selected flows
+   Unique to selected flows
+   High-coupling dependencies
+   Possible extraction boundaries
+   ```
+4. Let the user select multiple flows with checkboxes.
+
+This would directly support the refactoring question: “Which pieces are independent enough to extract, and which pieces are central shared state?”
+
+> Yep I agree. Create a 2nd version of the frontend flow explorer in `docs/`
+
+<details><summary>4 previous messages</summary>
+
+> I’ll make this as a separate second version so the first flow-detail explorer stays intact. I’m going to use a matrix/overlap model: select multiple flows, then see shared dependencies, unique dependencies, and likely refactor pressure points.
+>
+> I found no existing v2 file, so I’ll add `docs/frontend-flow-explorer-v2.html`. This version will keep the artifact self-contained but shift the main interaction from “read one flow” to “select several flows and inspect their shared objects.”
+>
+> <details><summary>Created a file</summary>
+>
+> - Wrote `./docs/frontend-flow-explorer-v2.html` (+1000 -0)
+>
+> </details>
+>
+> The v2 file is created. I’m going to read it back and do the same light checks as before: self-contained, path status, and no accidental non-ASCII.
+</details>
+
+Created the second version at [docs/frontend-flow-explorer-v2.html](<./docs/frontend-flow-explorer-v2.html>).
+
+This version is more like the dependency-overlap tool you described:
+
+- select multiple frontend flows with checkboxes
+- see dependency nodes light up by overlap
+- inspect “shared by all”, “shared by some”, “unique”, and “high-coupling” dependencies
+- use a matrix view to see exactly which flows touch which state/computed/handler/API/render object
+- click a dependency card to focus its matrix row
+
+I left the first explorer intact, so now you have:
+
+- `frontend-flow-explorer.html`: step-by-step flow detail
+- `frontend-flow-explorer-v2.html`: multi-flow dependency collision/refactor map
+
+Verification: read back the new file, confirmed it is untracked/new only, and confirmed it is ASCII-only. No build needed since it is a standalone docs HTML file.
+
+> as you can see the highlighted column corresponding to a frontend flow in the dependency matrix is barely highlighted. If changes are easy, which part of [frontend-flow-explorer-v2.html](docs/frontend-flow-explorer-v2.html) should I change to accentuate the color, since the dependency rows stretch all the way down
+>
+> User context
+>
+> Images:
+> - `data:image/png;base64,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IiISjToWGNm43R4wJ2X9ZOsy5i1cxrytJfj9PscyERERkWjUJYFRiNNs9E5lIiIiItGog4FRMm53CZtW7W8yANs9dRKEskMLl7Fyd8CxDP9+VuYXW5YUERERufE6NvhaRKQNNPg6fmjwtcSCjg++FhEREYlBCoxERERETAqMREREREwKjERERERMCoxERERETAqMREREREwKjERERERMCoxERERETAqMREREREwRn3wtIiIiEk8yUgZHDozuTNOUICLSOXVxOF1C7zjNw8fjuSaOz3esqq/XlCAiIiIiYQqMREREREwKjERERERMCoxERERETAqMREREREwKjERERERMCoxERERETAqMREREREwdDIx85E3JZmia9WcWeRVmdUUBD1jrphRQaV38wHJbndP6HJYDKvNn8UC+z1bassr8WQxNW84BMPfd2FejPNtSZ2fu148P2SuMZR32T0RERHquDgZGphkbOFPu5Uz5LlbeXcKqDYeAQzw7fj0s22XWedmWuZ57w0GEj7xfFZGxbBdnyjfw6Jfr+ecDHhbsMdvOsKx3z2xSbJssPV7CqDs8ttKWpczbxpny1UwEoJyjX6YxMtVYl7GtUJ2IiIjEs84FRg4q81/lXXL4p3mNwcvERYvJ+HI9/2xJy5TuPEgl43i13MurbY5KDrG9MIfHJsKBH1uzS2bG58ByhqYt59lwnVHeJGN0YB/vzniEjPxZzCoEChcZGSFblutZhxRSY4ZpFv983Kk828xmGZmmB6YY5c8eaNpGmSYREZHo1LnAqHCRebHPZdWXOWz71Tij/O47ybC2S01jVPgPDwv2GJmie80gI9wF15oD+3jXXPfEXxkZpjMfLCaDIraHA5kimBLKYhUxy9YNdmBPERl3ppEyb1tjdupXaeQ9a8lyvZ7Du0/butcqCpi1poRHX/dypvwVRpWUWMph5QdezpRvYNSa3HBQVcojfFru5dWJh/jnNSVmlsw5EyYiIiI3XucCo3BXmrdpd9SXxym1tqso56j1bzNTdKZ8A48S6oJrXeVX5WRMm2AEFaFxSuPXN90WRkYJPIzMbFIB+DhRksmTD9u74so5+iWNXXTpd5JBOSeaBWyZjEoH8DBlmrnysuOUUsKq8dkMTVvEu8DRr74BaNxXxvF/l2VSuia3lTFNIiIiciN1LjBykDLvWR6liH+yDJA+sGE9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`
+
+Yes, easy change. It is in [docs/frontend-flow-explorer-v2.html](<./docs/frontend-flow-explorer-v2.html>), inside the `renderMatrix()` function.
+
+Look for this part near the bottom:
+
+```js
+if (isSelectedColumn) {
+  cell.style.background = isUsed ? '#eff6ff' : '#fbfdff'
+}
+```
+
+Change it to stronger colors, for example:
+
+```js
+if (isSelectedColumn) {
+  cell.style.background = isUsed ? '#bfdbfe' : '#e0f2fe'
+}
+```
+
+That will make selected flow columns much more visible down the whole matrix.
+
+If you also want the column header to pop more, look slightly above for:
+
+```js
+if (selectedFlowIds.has(flow.id)) {
+  th.style.background = 'var(--accent-soft)'
+}
+```
+
+Change to:
+
+```js
+if (selectedFlowIds.has(flow.id)) {
+  th.style.background = '#93c5fd'
+}
+```
+
+The most important one is the `cell.style.background` line, because that controls the long vertical column shading.
+
+> https://nuxt.com/docs/4.x/directory-structure/app/components
+>
+> Ok before all this, I need to know: when you modularize Vue components (where each vue file contains 3 components), what exactly gets modularized? What do you 'import'?
+
+<details><summary>1 previous message</summary>
+
+> <details><summary>Searched the web</summary>
+>
+> <details><summary>Searched the web</summary>
+>
+> - Searched the web for `https://nuxt.com/docs/4.x/directory-structure/app/components`
+>
+> </details>
+>
+> </details>
+</details>
+
+In Nuxt/Vue, when you “modularize components,” you are usually modularizing **a piece of UI plus the frontend logic directly needed by that UI**.
+
+A `.vue` file is normally one **single-file component** with three blocks:
+
+```vue
+<script setup lang="ts">
+/* TypeScript logic for this component */
+</script>
+
+<template>
+  <!-- HTML-like markup for this component -->
+</template>
+
+<style scoped>
+/* CSS for this component */
+</style>
+```
+
+So the “3 components” you mentioned are not three Vue components. They are three **sections of one component**: logic, markup, styling.
+
+What Gets Modularized
+
+Suppose `app.vue` currently has:
+
+```text
+app.vue
+├── tree loading state
+├── selection state
+├── move dropdown state
+├── markdown preview state
+├── collapse state
+├── tree rendering template
+├── action buttons template
+├── preview panel template
+└── all CSS
+```
+
+When you split it, you might create:
+
+```text
+app/components/
+├── TreePanel.vue
+├── ExplorerActions.vue
+├── MoveControls.vue
+└── MarkdownPreviewPanel.vue
+```
+
+Each file contains its own:
+
+```text
+<script setup>  local props, emits, helper logic
+<template>      markup for that component
+<style scoped>  CSS for that component
+```
+
+For example, `MarkdownPreviewPanel.vue` might own the preview rendering:
+
+```vue
+<script setup lang="ts">
+type MarkdownPreview = {
+  id: string
+  name: string
+  content: string
+}
+
+defineProps<{
+  markdownPreview: MarkdownPreview | null
+  previewPending: boolean
+  previewError: string | null
+}>()
+</script>
+
+<template>
+  <section class="preview-panel">
+    <h2>Preview</h2>
+
+    <p v-if="previewPending">Loading preview...</p>
+    <p v-else-if="previewError">{{ previewError }}</p>
+
+    <article v-else-if="markdownPreview">
+      <h3>{{ markdownPreview.name }}</h3>
+      <pre>{{ markdownPreview.content }}</pre>
+    </article>
+
+    <p v-else>Select a Markdown file to preview its contents here.</p>
+  </section>
+</template>
+```
+
+Then `app.vue` uses it like:
+
+```vue
+<MarkdownPreviewPanel
+  :markdown-preview="markdownPreview"
+  :preview-pending="previewPending"
+  :preview-error="previewError"
+/>
+```
+
+What Do You Import?
+
+In Nuxt, components inside `app/components/` are usually **auto-imported**. The Nuxt docs say the `components/` directory is where Vue components go, and Nuxt automatically imports components from that directory. So in most cases you do **not** write:
+
+```ts
+import MarkdownPreviewPanel from './components/MarkdownPreviewPanel.vue'
+```
+
+You just use it in the template:
+
+```vue
+<MarkdownPreviewPanel />
+```
+
+Nuxt finds it automatically.
+
+You import manually mostly for:
+
+1. **Types or utility functions**
+
+```ts
+import type { TreeNode } from '~/types/tree'
+import { flattenTree } from '~/utils/treeDisplay'
+```
+
+2. **Composables**
+
+```ts
+const { selectedNodeId, selectNode } = useExplorerSelection()
+```
+
+3. **Dynamic component cases**
+
+Nuxt supports explicit component imports from `#components`, but that is not the normal beginner path.
+
+The Key Data Flow
+
+Components communicate through **props down, events up**.
+
+Parent owns shared state:
+
+```vue
+<script setup lang="ts">
+const selectedNodeId = ref<string | null>(null)
+
+function selectNode(node: DisplayNode) {
+  selectedNodeId.value = node.id
+}
+</script>
+
+<template>
+  <TreePanel
+    :visible-display-nodes="visibleDisplayNodes"
+    :selected-node-id="selectedNodeId"
+    @select-node="selectNode"
+  />
+</template>
+```
+
+Child receives data as props:
+
+```vue
+<script setup lang="ts">
+defineProps<{
+  visibleDisplayNodes: DisplayNode[]
+  selectedNodeId: string | null
+}>()
+
+const emit = defineEmits<{
+  selectNode: [node: DisplayNode]
+}>()
+</script>
+
+<template>
+  <li
+    v-for="node in visibleDisplayNodes"
+    :key="node.id"
+    @click="emit('selectNode', node)"
+  >
+    {{ node.name }}
+  </li>
+</template>
+```
+
+So you do not import `selectedNodeId` into the child. You **pass it as a prop**.
+
+For your app, the safest first modularization would be:
+
+```text
+app.vue keeps:
+- tree
+- selectedNodeId
+- selectedNodeType
+- moveDestinationValue
+- markdownPreview
+- API-calling handlers
+
+TreePanel.vue receives:
+- visibleDisplayNodes
+- selectedNodeId
+- collapsedFolderIds or helper results
+- emits select-node
+- emits toggle-folder
+
+MarkdownPreviewPanel.vue receives:
+- markdownPreview
+- previewPending
+- previewError
+
+MoveControls.vue receives:
+- moveDestinationValue
+- moveDestinations
+- canMoveSelectedNode
+- emits update destination
+- emits confirm move
+```
+
+The intuition: **shared state stays higher up** until you are sure only one component needs it.
+
+Source: Nuxt components docs: https://nuxt.com/docs/4.x/directory-structure/app/components
+
+> "Components communicate through props down, events up." explain in plain english
+
+In plain English:
+
+**Props down** means the parent gives information to the child.
+
+**Events up** means the child tells the parent that something happened.
+
+Example:
+
+```text
+Parent: app.vue
+Child: TreePanel.vue
+```
+
+`app.vue` owns the important state:
+
+```text
+selectedNodeId = "310-governance"
+tree = [...]
+```
+
+It passes that data down to `TreePanel.vue`:
+
+```vue
+<TreePanel
+  :visible-display-nodes="visibleDisplayNodes"
+  :selected-node-id="selectedNodeId"
+/>
+```
+
+That is **props down**.
+
+The child can use that data to render:
+
+```text
+TreePanel receives:
+- here are the rows to display
+- here is the selected row id
+```
+
+But if the user clicks a row inside `TreePanel`, the child usually should not directly mutate the parent’s state. Instead, it sends a message upward:
+
+```vue
+@click="emit('select-node', node)"
+```
+
+That is **events up**.
+
+In plain language:
+
+```text
+TreePanel says:
+"Hey parent, the user clicked this node."
+```
+
+Then `app.vue` decides what to do:
+
+```vue
+<TreePanel
+  :visible-display-nodes="visibleDisplayNodes"
+  :selected-node-id="selectedNodeId"
+  @select-node="selectNode"
+/>
+```
+
+So the full flow is:
+
+```text
+app.vue owns selectedNodeId
+        |
+        | props down
+        v
+TreePanel.vue receives selectedNodeId and renders highlighted row
+
+User clicks a row inside TreePanel.vue
+        |
+        | event up
+        v
+app.vue receives the event and updates selectedNodeId
+```
+
+The idea is:
+
+```text
+Parent owns shared state.
+Child displays data and reports user actions.
+```
+
+For your app, that means `TreePanel.vue` might not own the selected node. It just receives:
+
+```text
+"this is the selected node id"
+```
+
+and emits:
+
+```text
+"the user clicked this node"
+```
+
+Then `app.vue` updates the actual selection.
+
+> You said the following:
+> - "Components communicate through props down, events up."
+> - "shared state stays higher up until you are sure only one component needs it."
+> - "Props down means the parent gives information to the child. Events up means the child tells the parent that something happened."
+>
+> So then components are modularized not necessarily by responsibnliity or flow (unlike how you organize logical groups of functions as modules in python), and so then we could consider which state/rendering procedures/handlers are shared (e.g. almost all flows need `selectedNodeId`) which could be a candidate in some parent component?
+
+Yes. That’s the right intuition.
+
+Vue components are **not only** modularized by “logical responsibility” in the same way Python modules often are. They are modularized by a mix of:
+
+```text
+1. what UI region they render
+2. what state they need
+3. what user actions they emit
+4. whether the state is local or shared
+5. whether extracting them makes data flow clearer or messier
+```
+
+So for your app, the question is less:
+
+```text
+Can I group all move-related functions into one module?
+```
+
+and more:
+
+```text
+If I extract MoveControls.vue, what data must app.vue pass down,
+and what events must MoveControls.vue emit back up?
+```
+
+Your example is exactly right: `selectedNodeId` touches many flows.
+
+It affects:
+
+```text
+- selected row highlight
+- create folder parent decision
+- move source node
+- move destination validity
+- markdown preview race guard
+- clearing hidden selection after collapse
+```
+
+So `selectedNodeId` is **shared app-level state**. It should probably stay in `app.vue` for now, or later move into a shared composable like:
+
+```ts
+useExplorerSelection()
+```
+
+But it probably should **not** be owned by `TreePanel.vue`, because then `MoveControls.vue`, `MarkdownPreviewPanel.vue`, and create-folder logic would all need to ask `TreePanel.vue` what is selected. That gets awkward quickly.
+
+A good mental model:
+
+```text
+If only one component cares about state, that component can own it.
+
+If multiple sibling components care about state,
+move the state up to their closest common parent.
+```
+
+In your app:
+
+```text
+app.vue
+├── TreePanel.vue
+├── ExplorerActions.vue
+├── MoveControls.vue
+└── MarkdownPreviewPanel.vue
+```
+
+If both `TreePanel.vue` and `MoveControls.vue` need `selectedNodeId`, their closest common parent is `app.vue`.
+
+So:
+
+```text
+app.vue owns selectedNodeId
+TreePanel receives selectedNodeId as prop
+TreePanel emits select-node when row clicked
+MoveControls receives selectedNode / moveDestinations as props
+MoveControls emits confirm-move when button clicked
+MarkdownPreviewPanel receives preview state as props
+```
+
+That means component boundaries should be informed by your dependency explorer.
+
+For example:
+
+```text
+Highly shared state:
+- tree
+- selectedNodeId
+- selectedNodeType
+- allDisplayNodes
+```
+
+Probably stays high up.
+
+```text
+Mostly preview-specific state:
+- markdownPreview
+- previewPending
+- previewError
+- loadMarkdownPreview
+- clearMarkdownPreview
+```
+
+Could eventually move into a preview composable or stay in parent while `MarkdownPreviewPanel.vue` only renders props.
+
+```text
+Mostly move-specific state:
+- moveDestinationValue
+- moveDestinations
+- selectedMoveDestination
+- canMoveSelectedNode
+```
+
+Good candidate for `MoveControls.vue` or `useMoveDestinations()`.
+
+```text
+Mostly tree-rendering state:
+- visibleDisplayNodes
+- collapsedFolderIds
+- toggleFolderCollapsed
+- isFolderCollapsed
+```
+
+Good candidate for `TreePanel.vue` or `useTreeCollapse()`.
+
+The key caution: a component can have a clear visual responsibility but still rely on shared state. That is normal. The goal is not “no props.” The goal is:
+
+```text
+clear ownership of state
+clear props down
+clear events up
+no mysterious cross-component mutation
+```
+
+So yes: before modularizing, it is very reasonable to inspect which state/rendering helpers/handlers are shared. Shared things either stay in the parent or get extracted into composables. Less-shared visual regions become components.
