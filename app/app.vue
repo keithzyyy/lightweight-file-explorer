@@ -556,19 +556,11 @@ function clearSelection() {
 
     </aside>
 
-    <section class="preview-panel">
-      <h2>Preview</h2>
-
-      <p v-if="previewPending">Loading preview...</p>
-      <p v-else-if="previewError">{{ previewError }}</p>
-
-      <article v-else-if="markdownPreview" class="preview-document">
-        <h3>{{ markdownPreview.name }}</h3>
-        <pre class="preview-content">{{ markdownPreview.content }}</pre>
-      </article>
-
-      <p v-else>Select a Markdown file to preview its contents here.</p>
-    </section>
+    <MarkdownPreviewPanel
+      :markdown-preview="markdownPreview"
+      :preview-pending="previewPending"
+      :preview-error="previewError"
+    />
   </main>
 </template>
 
@@ -584,25 +576,6 @@ function clearSelection() {
   border-right: 1px solid #ddd;
   padding: 16px;
   background: #f8f9fb;
-}
-
-.preview-panel {
-  padding: 24px;
-}
-
-.preview-document h3 {
-  margin-top: 0;
-}
-
-.preview-content {
-  padding: 16px;
-  border: 1px solid #d9dee8;
-  border-radius: 4px;
-  overflow: auto;
-  white-space: pre-wrap;
-  font-family: Consolas, "Courier New", monospace;
-  line-height: 1.5;
-  background: #fbfcfe;
 }
 
 .tree-list {
