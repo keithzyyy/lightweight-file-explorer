@@ -1,36 +1,16 @@
 <script setup lang="ts">
-type TreeNode = {
-  id: string
-  type: 'folder' | 'file'
-  name: string
-  parentId: string | null
-  filePath: string | null
-  sortOrder: number
-  children: TreeNode[]
-}
-
-type DisplayNode = TreeNode & {
-  depth: number
-  ancestorIds: string[]
-}
-
-type MoveDestination = {
-  value: string
-  parentId: string | null
-  label: string
-  disabled: boolean
-}
+import type { MoveDestination, Tree } from '../types/data'
 
 /**
- * Left-side file explorer panel.
+ * Persistent file explorer sidebar used by the default layout.
  *
- * The parent app owns the shared state and mutation handlers. This component
- * renders that state and emits user actions back to the parent.
+ * The layout owns the shared state and mutation handlers. This component
+ * renders that state and emits user actions back to the layout.
  */
 const props = defineProps<{
   pending: boolean
   error: unknown
-  visibleDisplayNodes: DisplayNode[]
+  visibleDisplayNodes: Tree[]
   selectedNodeId: string | null
   moveDestinationValue: string
   moveDestinations: MoveDestination[]
@@ -41,9 +21,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   'create-folder': []
   'move-node': []
-  'select-node': [node: DisplayNode]
+  'select-node': [node: Tree]
   'clear-selection': []
-  'toggle-folder': [node: DisplayNode]
+  'toggle-folder': [node: Tree]
   'update-move-destination-value': [value: string]
 }>()
 

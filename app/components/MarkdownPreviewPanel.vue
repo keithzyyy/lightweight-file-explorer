@@ -1,18 +1,14 @@
 <script setup lang="ts">
-type MarkdownPreview = {
-  id: string
-  name: string
-  content: string
-}
+import type { TreeNode } from '../types/data'
 
 /**
  * Presentational panel for Markdown preview state.
  *
- * The parent app owns loading Markdown content and deciding when preview state
- * should be cleared. This component only renders the state it receives.
+ * The current page owns loading the selected node. This component only
+ * renders the state it receives.
  */
 const props = defineProps<{
-  markdownPreview: MarkdownPreview | null
+  markdownPreview: TreeNode | null
   previewPending: boolean
   previewError: string | null
 }>()
@@ -27,7 +23,11 @@ const props = defineProps<{
 
     <article v-else-if="props.markdownPreview" class="preview-document">
       <h3>{{ props.markdownPreview.name }}</h3>
-      <pre class="preview-content">{{ props.markdownPreview.content }}</pre>
+      <pre
+        v-if="props.markdownPreview.type === 'file'"
+        class="preview-content"
+      >{{ props.markdownPreview.content }}</pre>
+      <p v-else>This folder is selected in the file explorer.</p>
     </article>
 
     <p v-else>Select a Markdown file to preview its contents here.</p>

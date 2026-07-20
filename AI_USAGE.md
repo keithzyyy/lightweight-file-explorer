@@ -30,6 +30,9 @@ Below is Codex's synthesis of the timeline from my entire conversation history:
 | 10. SQLite persistence | Created `db.ts`, reused pure functions, switched API direction toward DB-backed storage | Shared: you reasoned architecture; Codex implemented DB layer |
 | 11. UI polish | Grouped controls and added collapse/expand folders | You noticed UX issues and requested improvements; Codex implemented |
 | 12. Spec catch-up | Updated spec to reflect DB persistence, preview, move UI, collapse state | You requested catch-up; Codex revised docs |
+| 13. Shared data types | Consolidated duplicated types into `app/types/data.ts`, combined the node shapes as `TreeNode`, and renamed the flattened UI type to `Tree` | You requested the refactor; Codex implemented and verified it |
+| 14. Tree resource API | Consolidated server routes under `/api/tree`, moved Markdown content into SQLite, replaced prototype scripts with `db-seed.ts`, and added node CRUD | You defined the route and data direction; Codex implemented, built, and smoke-tested it |
+| 15. Nuxt pages and layout | Added the default layout, homepage, dynamic node page, and renamed the explorer component to `AppSidebar` | You specified the Nuxt structure; Codex moved state, routing, and fetching into the appropriate files |
 
 
 ## How you reviewed, tested, or corrected AI-generated work
@@ -38,4 +41,3 @@ Below is Codex's synthesis of the timeline from my entire conversation history:
   - Normally I would have integrated testing (e.g. unit testing) in my workflow, but I had made a decision to defer testing since I am not familiar with JavaScript, let alone its testing frameworks.
     - To compensate for this deferral, I tried my best to design code as defensive as possible -- brainstorming possible points of errors, reasonably limit what the user can do, notably when choosing a destination folder to move to.
   - A typical file explorer application normally allow an interactive drag-and-drop, but as an MVP I opted to show a dropdown of valid list of folders to move to. 
-

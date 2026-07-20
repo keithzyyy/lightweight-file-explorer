@@ -31,10 +31,23 @@ npm.cmd run build
 
 Then open the URL printed in the terminal, usually http://localhost:3000.
 
+The homepage is `/`. Selecting a tree node navigates to `/:id`, where the
+dynamic Nuxt page fetches that node from the tree API.
+
 NOTE: The SQLite DB is created automatically
 - `data/file-explorer.sqlite` is generated on first run.
 - `data/` is intentionally ignored by Git so that persistence stays local on your machine.
-- The app seeds from `files/` when the DB is empty.
+- The first `GET /api/tree` request runs `scripts/db-seed.ts` once.
+- The seed copies the provided Markdown bodies into SQLite's `content` column.
+- Preview requests read content from SQLite; the original files remain unchanged seed inputs.
+
+## Tree API
+
+- `GET /api/tree` returns the flattened explorer display.
+- `POST /api/tree/node/:id` creates a child folder (`__root__` creates at root).
+- `GET /api/tree/node/:id` returns one node with its stored content.
+- `PATCH /api/tree/node/:id` renames and/or moves a node.
+- `DELETE /api/tree/node/:id` deletes a node and its descendants.
 
 
 # AI Usage Pointer

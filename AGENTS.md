@@ -34,7 +34,8 @@ The MVP should:
 - Keep the original Markdown files in `files/` flat.
 - Do not physically move, rename, or rewrite the original Markdown files as part of normal app behavior.
 - Treat folders as virtual metadata stored in the database.
-- Treat file nodes as database records that point to Markdown files on disk.
+- Treat file nodes as database records whose Markdown body is stored in `content`.
+- Use `scripts/db-seed.ts` to copy the original Markdown into SQLite once during database initialization.
 - No file upload is required for the MVP.
 
 ## Data Model Decisions
@@ -49,16 +50,16 @@ Expected node fields:
 - `type`: `folder` or `file`
 - `name`
 - `parent_id`
-- `file_path`
+- `content`
 - `sort_order`
 
 Rules:
 
 - `parent_id = NULL` means the node is at the root of the virtual explorer.
 - Folder nodes may contain folder nodes or file nodes.
-- File nodes point to Markdown files using `file_path`.
-- Folder nodes should not have a `file_path`.
-- The frontend should transform flat database rows into a tree for rendering.
+- File nodes store Markdown text using `content`.
+- Folder nodes should use an empty `content` string.
+- The server should transform flat database rows into `Tree[]` display rows for the frontend.
 - The tree transform can be implemented with a standard parent-id lookup map; no special tree database is required for the MVP.
 
 ## Initial Organization Rule
@@ -91,19 +92,20 @@ After seeding, user changes should be loaded from persisted SQLite state rather 
 
 Design the app around these operations:
 
-- `loadTree()`
-- `createFolder(parentId, name)`
-- `moveNode(nodeId, newParentId)`
-- `getMarkdownFile(fileId)`
-- `saveTree(tree)` or equivalent persistence-layer operations
+- `loadNodes()`
+- `getNodeById(nodeId)`
+- `insertFolder(parentId, name)`
+- `patchNode(nodeId, updates)`
+- `deleteNode(nodeId)`
 
 Behavior expectations:
 
 - Creating a folder with `parentId = NULL` creates it at the root.
 - Creating a folder with a folder `parentId` creates it inside that folder.
-- Moving a node updates its `parent_id`.
+- Patching a node can update its `name` and/or `parent_id`.
 - Moving a folder into itself or one of its descendants must be prevented.
-- File preview should read Markdown content from the real file path referenced by the file node.
+- Deleting a folder removes its descendants.
+- File preview should read Markdown content from SQLite.
 
 ## UI/UX Decisions
 
@@ -113,6 +115,9 @@ MVP layout:
 
 - file/folder tree on the left
 - selected Markdown file preview on the right
+- `app/layouts/default.vue` owns the persistent `AppSidebar`
+- `app/pages/index.vue` is the homepage
+- `app/pages/[id].vue` fetches and previews the selected node
 - create-folder action exposed as a button
 - move action exposed through a simple "Move to..." control
 - drag-and-drop is optional and not required for the MVP
